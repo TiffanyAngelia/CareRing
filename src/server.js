@@ -44,21 +44,37 @@ You are CareRing, a warm, patient, elderly-friendly phone companion.
 
 Your role on the phone:
 - Speak simply, slowly, and clearly.
-- Keep replies short: 1–2 sentences.
+- Keep each reply short: usually 1 to 2 sentences.
 - Ask only one question at a time.
-- Be calm and supportive.
-- Avoid jargon or complicated words.
+- Sound calm, respectful, and human.
+- Avoid slang, jargon, or overly robotic wording.
+- If the caller seems confused, gently repeat or rephrase.
+- Always acknowledge what they said before moving on.
+- Help with check-ins like mood, meals, hydration, medication, pets, safety, and loneliness.
+- Never overwhelm the caller with long lists.
+- If they sound distressed, very unwell, unsafe, or say they fell / cannot breathe / have chest pain / are in danger, tell them to call emergency services or a trusted caretaker immediately.
+- If they request their caretaker, respond supportively and say you will notify the caretaker system.
 
 Conversation style rules:
-- Maximum 30 words
-- One gentle question
-- Sound human and warm
+- Use reassuring phrases like "Take your time," "That's okay," and "I'm here with you."
+- Prefer yes/no or very easy questions.
+- End with one gentle next question.
+- Maximum 35 words.
 `;
 
 function getSession(callSid) {
   if (!sessions.has(callSid)) {
     sessions.set(callSid, {
       history: [],
+      summary: {
+        mood: null,
+        medication: null,
+        meals: null,
+        hydration: null,
+        pets: null,
+        loneliness: null,
+        riskFlags: [],
+      },
       createdAt: new Date().toISOString(),
     });
   }
@@ -66,10 +82,61 @@ function getSession(callSid) {
   return sessions.get(callSid);
 }
 
+function updateSummaryFromText(session, text) {
+  const lower = text.toLowerCase();
+
+  if (["sad", "lonely", "upset", "worried", "scared", "tired", "happy", "okay", "fine"].some((w) => lower.includes(w))) {
+    session.summary.mood = text;
+  }
+
+  if (["medicine", "medication", "pill", "tablet", "dose"].some((w) => lower.includes(w))) {
+    session.summary.medication = text;
+  }
+
+  if (["ate", "eating", "meal", "breakfast", "lunch", "dinner", "food"].some((w) => lower.includes(w))) {
+    session.summary.meals = text;
+  }
+
+  if (["water", "drink", "drank", "hydrated", "tea", "juice"].some((w) => lower.includes(w))) {
+    session.summary.hydration = text;
+  }
+
+  if (["cat", "dog", "pet", "fed", "litter"].some((w) => lower.includes(w))) {
+    session.summary.pets = text;
+  }
+
+  if (["lonely", "caretaker", "daughter", "son", "call someone", "talk to someone"].some((w) => lower.includes(w))) {
+    session.summary.loneliness = text;
+  }
+
+  const riskWords = [
+    "fell",
+    "fall",
+    "dizzy",
+    "chest pain",
+    "can't breathe",
+    "cannot breathe",
+    "help me",
+    "emergency",
+    "bleeding",
+    "confused",
+    "not safe",
+    "hurt",
+    "injured",
+  ];
+
+  for (const word of riskWords) {
+    if (lower.includes(word) && !session.summary.riskFlags.includes(word)) {
+      session.summary.riskFlags.push(word);
+    }
+  }
+}
+
 async function generateReply(callSid, userText) {
   const session = getSession(callSid);
 
-  session.history.push({ role: "user", text: userText });
+  session.history.push({ role: "user", text: userText, at: new Date().toISOString() });
+  updateSummaryFromText(session, userText);
 
   const conversation = session.history
     .slice(-10)
@@ -78,19 +145,27 @@ async function generateReply(callSid, userText) {
 
   const prompt = `${SYSTEM_PROMPT}
 
-Conversation:
+Current lightweight summary:
+${JSON.stringify(session.summary, null, 2)}
+
+Recent conversation:
 ${conversation}
 
-Reply as CareRing.`;
+Write the next phone response for the elderly caller.
+Requirements:
+- maximum 35 words
+- warm and very easy to understand
+- only one question
+- no bullet points
+`;
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: [{ parts: [{ text: prompt }] }],
   });
 
-  const text = response.text?.trim() || "I'm here with you. How are you feeling right now?";
-
-  session.history.push({ role: "assistant", text });
+  const text = response.text?.trim() || "I'm here with you. Have you had some water today?";
+  session.history.push({ role: "assistant", text, at: new Date().toISOString() });
 
   return text;
 }
@@ -113,7 +188,15 @@ async function saveWaveFile(filename, pcmData, channels = 1, rate = 24000, sampl
 async function synthesizeSpeech(text) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-preview-tts",
-    contents: [{ parts: [{ text }] }],
+    contents: [
+      {
+        parts: [
+          {
+            text: `Say this warmly, slowly, clearly, and in a comforting tone for an elderly listener: ${text}`,
+          },
+        ],
+      },
+    ],
     config: {
       responseModalities: ["AUDIO"],
       speechConfig: {
@@ -125,9 +208,8 @@ async function synthesizeSpeech(text) {
   });
 
   const data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
   if (!data) {
-    throw new Error("No audio returned from Gemini TTS");
+    throw new Error("No audio returned from Gemini TTS.");
   }
 
   const audioBuffer = Buffer.from(data, "base64");
@@ -135,23 +217,25 @@ async function synthesizeSpeech(text) {
   const filepath = path.join(audioDir, filename);
 
   await saveWaveFile(filepath, audioBuffer);
-
   return `${BASE_URL}/audio/${filename}`;
 }
 
 function isRequestFromTwilio(req) {
-  if (NODE_ENV !== "production") return true;
+  if (NODE_ENV !== "production") {
+    return true;
+  }
 
   const signature = req.header("X-Twilio-Signature");
-  if (!signature) return false;
+  if (!signature) {
+    return false;
+  }
 
   const url = `${BASE_URL}${req.originalUrl}`;
-
   return twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, url, req.body);
 }
 
 function buildGather(twiml) {
-  const gather = twiml.gather({
+  return twiml.gather({
     input: "speech",
     action: `${BASE_URL}/gather`,
     method: "POST",
@@ -159,8 +243,6 @@ function buildGather(twiml) {
     language: "en-US",
     actionOnEmptyResult: true,
   });
-
-  gather.pause({ length: 1 });
 }
 
 app.get("/health", (_req, res) => {
@@ -168,32 +250,30 @@ app.get("/health", (_req, res) => {
 });
 
 app.post("/voice", async (req, res) => {
-  console.log("VOICE HIT", req.body);
+  console.log("VOICE HIT");
+  console.log("Body:", req.body);
 
   if (!isRequestFromTwilio(req)) {
     return res.status(403).send("Invalid Twilio signature");
   }
 
   const twiml = new twilio.twiml.VoiceResponse();
-  const callSid = req.body.CallSid;
-
+  const callSid = req.body.CallSid || crypto.randomUUID();
   getSession(callSid);
 
   try {
-    const greeting = "Hello, this is CareRing checking in. Take your time. How are you feeling today?";
-
-    const audioUrl = await synthesizeSpeech(greeting);
+    const firstMessage =
+      "Hello, this is CareRing checking in. Take your time. How are you feeling today?";
+    const audioUrl = await synthesizeSpeech(firstMessage);
 
     twiml.play(audioUrl);
-
     buildGather(twiml);
 
     res.type("text/xml").send(twiml.toString());
   } catch (error) {
-    console.error(error);
+    console.error("Error in /voice:", error);
 
-    twiml.say("Hello, this is CareRing checking in. How are you feeling today?");
-
+    twiml.say("Hello, this is CareRing checking in. Take your time. How are you feeling today?");
     buildGather(twiml);
 
     res.type("text/xml").send(twiml.toString());
@@ -201,37 +281,43 @@ app.post("/voice", async (req, res) => {
 });
 
 app.post("/gather", async (req, res) => {
-  console.log("GATHER HIT", req.body);
+  console.log("GATHER HIT");
+  console.log("Body:", req.body);
 
   if (!isRequestFromTwilio(req)) {
     return res.status(403).send("Invalid Twilio signature");
   }
 
   const twiml = new twilio.twiml.VoiceResponse();
-  const callSid = req.body.CallSid;
+  const callSid = req.body.CallSid || "unknown-call";
   const transcript = (req.body.SpeechResult || "").trim();
+
+  console.log("Transcript:", transcript);
 
   try {
     let reply;
 
     if (!transcript) {
-      reply = "That's okay. Take your time. Could you please say that again?";
+      reply = "That's okay. I didn't catch that. Could you say it once more?";
     } else {
       reply = await generateReply(callSid, transcript);
     }
 
-    const audioUrl = await synthesizeSpeech(reply);
-
-    twiml.play(audioUrl);
+    let audioUrl;
+    try {
+      audioUrl = await synthesizeSpeech(reply);
+      twiml.play(audioUrl);
+    } catch (ttsError) {
+      console.error("TTS failed in /gather:", ttsError);
+      twiml.say(reply);
+    }
 
     buildGather(twiml);
-
     res.type("text/xml").send(twiml.toString());
   } catch (error) {
-    console.error(error);
+    console.error("Error in /gather:", error);
 
-    twiml.say("I'm sorry, I had trouble hearing that. Could you say it again?");
-
+    twiml.say("I'm sorry, something went wrong. Could you say that again?");
     buildGather(twiml);
 
     res.type("text/xml").send(twiml.toString());
@@ -241,4 +327,5 @@ app.post("/gather", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`CareRing voicebot running on port ${PORT}`);
   console.log(`Base URL: ${BASE_URL}`);
+  console.log(`Mode: ${NODE_ENV}`);
 });
