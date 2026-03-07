@@ -56,19 +56,11 @@ Your role on the phone:
 - If they request their caretaker, respond supportively and say you will notify the caretaker system.
 
 Conversation style rules:
-- Use reassuring phrases like “Take your time,” “That’s okay,” and “I’m here with you.”
+- Use reassuring phrases like "Take your time," "That's okay," and "I'm here with you."
 - Prefer yes/no or very easy questions.
 - End with one gentle next question.
 - Do not mention policies or that you are following instructions.
 - Never say you are replacing medical professionals.
-
-When summarizing the caller's state internally, pay attention to:
-- mood
-- medication taken or missed
-- food/water
-- pets/tasks completed
-- loneliness or desire to speak to caretaker
-- any risk flags
 `;
 
 function getSession(callSid) {
@@ -84,6 +76,7 @@ function getSession(callSid) {
         loneliness: null,
         riskFlags: [],
       },
+      errorCount: 0,
       createdAt: new Date().toISOString(),
     });
   }
@@ -174,7 +167,7 @@ Requirements:
     contents: [{ parts: [{ text: prompt }] }],
   });
 
-  const text = response.text?.trim() || "Hello, I’m here with you. Have you had some water today?";
+  const text = response.text?.trim() || "Hello, I'm here with you. Have you had some water today?";
   session.history.push({ role: "assistant", text, at: new Date().toISOString() });
 
   return text;
@@ -244,7 +237,9 @@ function isRequestFromTwilio(req) {
   return twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, url, req.body);
 }
 
-function buildGather(twiml) {
+async function gatherWithPrompt(twiml, text) {
+  const audioUrl = await synthesizeSpeech(text);
+
   const gather = twiml.gather({
     input: "speech",
     action: `${BASE_URL}/gather`,
@@ -253,42 +248,15 @@ function buildGather(twiml) {
     speechModel: "phone_call",
     enhanced: true,
     language: "en-US",
+    timeout: 5,
     actionOnEmptyResult: true,
   });
 
-  gather.pause({ length: 1 });
-  return gather;
+  gather.play(audioUrl);
 }
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, environment: NODE_ENV });
-});
-
-app.get("/test-ai", async (_req, res) => {
-  try {
-    const reply = await generateReply(
-      "test-call",
-      "I am feeling a little lonely today and I forgot to drink water."
-    );
-
-    res.json({ ok: true, reply });
-  } catch (error) {
-    console.error("Error in /test-ai:", error);
-    res.status(500).json({ ok: false, error: error.message });
-  }
-});
-
-app.get("/test-tts", async (_req, res) => {
-  try {
-    const audioUrl = await synthesizeSpeech(
-      "Hello, this is CareRing checking in. Have you had some water today?"
-    );
-
-    res.json({ ok: true, audioUrl });
-  } catch (error) {
-    console.error("Error in /test-tts:", error);
-    res.status(500).json({ ok: false, error: error.message });
-  }
 });
 
 app.post("/voice", async (req, res) => {
@@ -305,21 +273,27 @@ app.post("/voice", async (req, res) => {
   getSession(callSid);
 
   try {
-    const firstMessage = "Hello, this is CareRing checking in. Take your time. How are you feeling today?";
-    const audioUrl = await synthesizeSpeech(firstMessage);
-
-    console.log("Initial audio URL:", audioUrl);
-
-    twiml.play(audioUrl);
-    buildGather(twiml);
-
+    await gatherWithPrompt(
+      twiml,
+      "Hello, this is CareRing checking in. Take your time. How are you feeling today?"
+    );
     res.type("text/xml").send(twiml.toString());
   } catch (error) {
     console.error("Error in /voice:", error);
 
-    twiml.say("Hello, this is CareRing checking in. Take your time. How are you feeling today?");
-    buildGather(twiml);
+    const gather = twiml.gather({
+      input: "speech",
+      action: `${BASE_URL}/gather`,
+      method: "POST",
+      speechTimeout: "auto",
+      speechModel: "phone_call",
+      enhanced: true,
+      language: "en-US",
+      timeout: 5,
+      actionOnEmptyResult: true,
+    });
 
+    gather.say("Hello, this is CareRing checking in. Take your time. How are you feeling today?");
     res.type("text/xml").send(twiml.toString());
   }
 });
@@ -336,6 +310,7 @@ app.post("/gather", async (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
   const callSid = req.body.CallSid || "unknown-call";
   const transcript = (req.body.SpeechResult || "").trim();
+  const session = getSession(callSid);
 
   console.log("Transcript:", transcript);
 
@@ -343,30 +318,58 @@ app.post("/gather", async (req, res) => {
     let reply;
 
     if (!transcript) {
-      reply = "That’s okay. Take your time. Could you please say that once more?";
+      reply = "That's okay. I didn't catch that. Could you please say it once more?";
     } else {
       reply = await generateReply(callSid, transcript);
     }
 
+    session.errorCount = 0;
     console.log("AI reply:", reply);
 
-    let audioUrl;
     try {
-      audioUrl = await synthesizeSpeech(reply);
-      console.log("Audio URL:", audioUrl);
-      twiml.play(audioUrl);
+      await gatherWithPrompt(twiml, reply);
     } catch (ttsError) {
       console.error("TTS failed in /gather:", ttsError);
-      twiml.say(reply);
+
+      const gather = twiml.gather({
+        input: "speech",
+        action: `${BASE_URL}/gather`,
+        method: "POST",
+        speechTimeout: "auto",
+        speechModel: "phone_call",
+        enhanced: true,
+        language: "en-US",
+        timeout: 5,
+        actionOnEmptyResult: true,
+      });
+
+      gather.say(reply);
     }
 
-    buildGather(twiml);
     res.type("text/xml").send(twiml.toString());
   } catch (error) {
     console.error("Error in /gather:", error);
 
-    twiml.say("I'm sorry, something went wrong. Could you say that again?");
-    buildGather(twiml);
+    session.errorCount += 1;
+
+    if (session.errorCount >= 2) {
+      twiml.say("I'm sorry, I'm having trouble right now. Please try again later.");
+      twiml.hangup();
+    } else {
+      const gather = twiml.gather({
+        input: "speech",
+        action: `${BASE_URL}/gather`,
+        method: "POST",
+        speechTimeout: "auto",
+        speechModel: "phone_call",
+        enhanced: true,
+        language: "en-US",
+        timeout: 5,
+        actionOnEmptyResult: true,
+      });
+
+      gather.say("I'm sorry, something went wrong. Could you please say that again?");
+    }
 
     res.type("text/xml").send(twiml.toString());
   }
