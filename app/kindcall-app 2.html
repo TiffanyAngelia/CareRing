@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CareRing</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #FAF7F2;
+  --navy: #1C2B3A;
+  --navy-light: #243447;
+  --amber: #E8943A;
+  --amber-light: #F5B56A;
+  --sage: #7BA68A;
+  --sage-light: #A8C4B0;
+  --sage-bg: #EEF5F1;
+  --red: #D95B5B;
+  --red-bg: #FDF0F0;
+  --gold: #C9964A;
+  --text-dark: #1C2B3A;
+  --text-mid: #5A6E7F;
+  --text-light: #96A8B4;
+  --border: #E4DDD4;
+  --white: #FFFFFF;
+  --shadow-sm: 0 2px 8px rgba(28,43,58,0.08);
+  --shadow-md: 0 8px 24px rgba(28,43,58,0.12);
+  --shadow-lg: 0 16px 48px rgba(28,43,58,0.18);
+  --radius: 20px;
+  --radius-sm: 12px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: #E8E2D9;
+  font-family: 'Sora', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+/* ── PHONE SHELL ── */
+.app-shell {
+  width: 390px;
+  min-height: 844px;
+  background: var(--cream);
+  border-radius: 48px;
+  box-shadow: var(--shadow-lg), 0 0 0 8px #D4CEC6, 0 0 0 10px #C8C2BA;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.status-bar {
+  height: 44px;
+  background: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  flex-shrink: 0;
+}
+.status-bar.light { background: var(--cream); color: var(--navy); }
+.status-bar.sage-bar { background: var(--sage-bg); color: var(--navy); }
+
+.status-notch {
+  position: absolute;
+  top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 34px;
+  background: var(--navy);
+  border-radius: 0 0 20px 20px;
+}
+.status-bar.light .status-notch { background: var(--cream); }
+.status-bar.sage-bar .status-notch { background: var(--sage-bg); }
+
+/* ── SCREENS ── */
+.screen {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.screen::-webkit-scrollbar { display: none; }
+.screen.active { display: flex; }
+
+/* ── ANIMATIONS ── */
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(24px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(217,91,91,0.4); }
+  50%      { box-shadow: 0 0 0 12px rgba(217,91,91,0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.anim { animation: slideUp 0.4s cubic-bezier(0.34,1.2,0.64,1) both; }
+.anim-d1 { animation-delay: 0.05s; }
+.anim-d2 { animation-delay: 0.1s; }
+.anim-d3 { animation-delay: 0.15s; }
+.anim-d4 { animation-delay: 0.2s; }
+.anim-d5 { animation-delay: 0.25s; }
+
+/* ════════════════════════════════════
+   SCREEN 1 — WELCOME
+════════════════════════════════════ */
+#s-welcome {
+  background: var(--navy);
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  gap: 0;
+}
+
+.welcome-logo {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, var(--amber), var(--amber-light));
+  border-radius: 28px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  margin-bottom: 28px;
+  box-shadow: 0 8px 32px rgba(232,148,58,0.4);
+  animation: slideUp 0.5s cubic-bezier(0.34,1.3,0.64,1) both;
+}
+.welcome-title {
+  font-family: 'Lora', serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 10px;
+  text-align: center;
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.1s both;
+}
+.welcome-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  margin-bottom: 56px;
+  line-height: 1.6;
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.15s both;
+}
+.welcome-question {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  animation: slideUp 0.5s 0.2s both;
+}
+.role-btn {
+  width: 100%;
+  padding: 20px 24px;
+  border-radius: var(--radius);
+  border: none;
+  display: flex; align-items: center; gap: 16px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  margin-bottom: 14px;
+  text-align: left;
+}
+.role-btn:active { transform: scale(0.97); }
+.role-btn.elder {
+  background: linear-gradient(135deg, var(--sage) 0%, #5C9070 100%);
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.25s both;
+  box-shadow: 0 8px 24px rgba(123,166,138,0.35);
+}
+.role-btn.caretaker {
+  background: linear-gradient(135deg, var(--amber) 0%, #D4782A 100%);
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.3s both;
+  box-shadow: 0 8px 24px rgba(232,148,58,0.35);
+}
+.role-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.25); }
+.role-icon {
+  width: 48px; height: 48px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.role-text .role-name { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.role-text .role-desc { font-size: 12px; color: rgba(255,255,255,0.7); }
+.role-arrow { margin-left: auto; font-size: 18px; color: rgba(255,255,255,0.6); }
+
+/* ════════════════════════════════════
+   SCREEN 2 — ELDER CODE
+════════════════════════════════════ */
+#s-elder-code { background: var(--sage-bg); padding: 0 0 40px; }
+
+.page-header {
+  padding: 24px 28px 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+.back-btn {
+  width: 40px; height: 40px;
+  background: rgba(255,255,255,0.8);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; color: var(--navy);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.back-btn:hover { background: #fff; }
+.page-header-title { font-size: 18px; font-weight: 700; color: var(--navy); }
+
+.elder-hero {
+  margin: 0 24px 28px;
+  background: linear-gradient(135deg, var(--sage) 0%, #4A8060 100%);
+  border-radius: 28px;
+  padding: 32px 28px;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 12px 32px rgba(123,166,138,0.3);
+}
+.elder-hero-icon { font-size: 48px; margin-bottom: 12px; }
+.elder-hero-title { font-family:'Lora',serif; font-size:22px; color:#fff; font-weight:600; margin-bottom:6px; }
+.elder-hero-sub { font-size:13px; color:rgba(255,255,255,0.75); text-align:center; line-height:1.5; }
+
+.code-card {
+  margin: 0 24px 20px;
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.code-label { font-size: 12px; font-weight: 600; color: var(--text-light); letter-spacing: 1.5px; text-transform: uppercase; }
+.code-display {
+  font-family: 'Lora', serif;
+  font-size: 44px;
+  font-weight: 600;
+  color: var(--navy);
+  letter-spacing: 10px;
+  padding: 16px 24px;
+  background: var(--sage-bg);
+  border-radius: var(--radius-sm);
+  border: 2px dashed var(--sage-light);
+  width: 100%; text-align: center;
+}
+.code-hint { font-size: 12px; color: var(--text-light); text-align: center; line-height: 1.5; }
+
+.btn-outline-sage {
+  width: calc(100% - 48px); margin: 0 24px;
+  padding: 16px;
+  background: transparent;
+  border: 2px solid var(--sage);
+  border-radius: var(--radius);
+  color: var(--sage);
+  font-family: 'Sora', sans-serif;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-outline-sage:hover { background: var(--sage); color: #fff; }
+
+/* ════════════════════════════════════
+   SCREEN 3 — CARETAKER CONNECT
+════════════════════════════════════ */
+#s-care-connect { background: var(--cream); padding: 0 0 40px; }
+
+.connect-hero {
+  background: linear-gradient(160deg, var(--navy) 0%, var(--navy-light) 100%);
+  padding: 32px 28px 40px;
+  margin-bottom: -20px;
+}
+.connect-hero-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(232,148,58,0.2); border: 1px solid rgba(232,148,58,0.3);
+  border-radius: 99px; padding: 5px 12px;
+  font-size: 11px; font-weight: 600; color: var(--amber-light);
+  letter-spacing: 0.5px; margin-bottom: 16px;
+}
+.connect-hero-title { font-family:'Lora',serif; font-size:26px; color:#fff; font-weight:600; margin-bottom:8px; }
+.connect-hero-sub { font-size:13px; color:rgba(255,255,255,0.55); line-height:1.6; }
+
+.form-card {
+  margin: 0 20px;
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 28px 22px;
+  box-shadow: var(--shadow-md);
+  border: 1.5px solid var(--border);
+  display: flex; flex-direction: column; gap: 18px;
+  position: relative; z-index: 1;
+}
+.form-group { display: flex; flex-direction: column; gap: 7px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-mid); letter-spacing: 0.5px; }
+.form-input {
+  padding: 14px 16px;
+  background: var(--cream);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Sora', sans-serif;
+  font-size: 15px; color: var(--navy);
+  outline: none; transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--amber); }
+.form-input.code-input {
+  font-family: 'Lora', serif;
+  font-size: 22px; font-weight: 600;
+  letter-spacing: 6px; text-align: center;
+  color: var(--navy);
+}
+.form-input::placeholder { color: var(--text-light); font-size: 14px; letter-spacing: normal; }
+
+.btn-primary {
+  width: 100%; padding: 17px;
+  background: linear-gradient(135deg, var(--amber), #D4782A);
+  border: none; border-radius: var(--radius);
+  color: #fff; font-family: 'Sora', sans-serif;
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 6px 20px rgba(232,148,58,0.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(232,148,58,0.4); }
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-primary.sage {
+  background: linear-gradient(135deg, var(--sage), #4A8060);
+  box-shadow: 0 6px 20px rgba(123,166,138,0.35);
+}
+
+/* ════════════════════════════════════
+   CARETAKER HOME BASE
+════════════════════════════════════ */
+#s-care-home { background: var(--cream); flex-direction: column; }
+
+.home-header {
+  background: var(--navy);
+  padding: 20px 24px 28px;
+}
+.home-header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.home-greeting { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 3px; }
+.home-name { font-family:'Lora',serif; font-size:22px; color:#fff; font-weight:600; }
+.avatar {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--amber), var(--amber-light));
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.elder-card-mini {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.elder-mini-avatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--sage), #4A8060);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.elder-mini-name { font-size: 14px; font-weight: 600; color: #fff; }
+.elder-mini-status { font-size: 11px; color: rgba(255,255,255,0.5); }
+.status-dot-sm { width: 6px; height: 6px; background: var(--sage-light); border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+/* TAB BAR */
+.tab-bar {
+  display: flex;
+  background: var(--white);
+  border-top: 1.5px solid var(--border);
+  padding: 8px 0 20px;
+  flex-shrink: 0;
+}
+.tab-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  cursor: pointer; padding: 6px 0;
+  transition: all 0.15s;
+}
+.tab-icon { font-size: 22px; transition: transform 0.2s; }
+.tab-label { font-size: 10px; font-weight: 600; color: var(--text-light); letter-spacing: 0.3px; }
+.tab-item.active .tab-label { color: var(--amber); }
+.tab-item.active .tab-icon { transform: translateY(-2px); }
+
+/* TAB PANELS */
+.tab-panel { display: none; flex: 1; overflow-y: auto; padding: 20px 20px 0; }
+.tab-panel::-webkit-scrollbar { display: none; }
+.tab-panel.active { display: block; }
+
+/* SECTION LABEL */
+.section-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-light); letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 12px; margin-top: 4px;
+}
+
+/* CARDS */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid var(--border);
+  margin-bottom: 16px;
+}
+.card-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.card-sub { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+
+/* DROPDOWN */
+.dropdown-wrap { position: relative; }
+.dropdown-trigger {
+  width: 100%; padding: 13px 16px;
+  background: var(--cream);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; font-family:'Sora',sans-serif;
+  font-size: 14px; color: var(--navy); font-weight: 500;
+  transition: border-color 0.2s;
+}
+.dropdown-trigger:hover { border-color: var(--amber); }
+.dropdown-chevron { font-size: 12px; color: var(--text-light); transition: transform 0.2s; }
+.dropdown-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-md);
+  z-index: 10; overflow: hidden; display: none;
+}
+.dropdown-menu.open { display: block; animation: fadeIn 0.15s; }
+.dropdown-option {
+  padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: background 0.1s;
+  font-size: 14px; color: var(--navy);
+}
+.dropdown-option:hover { background: var(--cream); }
+.dropdown-option.selected { color: var(--sage); font-weight: 600; }
+.check-icon { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--border); flex-shrink: 0; display:flex;align-items:center;justify-content:center; font-size:10px; }
+.check-icon.checked { background: var(--sage); border-color: var(--sage); color: #fff; }
+
+/* CALLS PER DAY */
+.count-selector { display: flex; gap: 10px; }
+.count-btn {
+  flex: 1; padding: 11px 0;
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); text-align: center;
+  font-size: 15px; font-weight: 700; color: var(--text-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.count-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+.time-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.time-pill {
+  padding: 8px 14px; background: var(--cream);
+  border: 1.5px solid var(--border); border-radius: 99px;
+  font-size: 13px; font-weight: 600; color: var(--text-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.time-pill.active { background: var(--amber); border-color: var(--amber); color: #fff; }
+
+/* DAYS GRID */
+.days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.day-btn {
+  aspect-ratio: 1; border-radius: 10px;
+  background: var(--cream); border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.day-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+/* CLOCK SCROLL */
+.clock-wrap {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); overflow: hidden;
+  position: relative; height: 140px;
+}
+.clock-wrap::before, .clock-wrap::after {
+  content:''; position: absolute; left:0; right:0; height:40px; z-index:2; pointer-events:none;
+}
+.clock-wrap::before { top:0; background: linear-gradient(to bottom, var(--cream), transparent); }
+.clock-wrap::after  { bottom:0; background: linear-gradient(to top, var(--cream), transparent); }
+.clock-highlight-line {
+  position: absolute; top:50%; left:12px; right:12px;
+  height: 40px; transform: translateY(-50%);
+  background: var(--white); border-radius: 10px;
+  border: 1.5px solid var(--border); z-index:1;
+}
+.clock-scroller {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 50px 0; gap: 0;
+  overflow-y: scroll; height: 100%; scrollbar-width: none;
+}
+.clock-scroller::-webkit-scrollbar { display: none; }
+.clock-item {
+  height: 40px; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 500; color: var(--text-light);
+  z-index: 3; position: relative; width: 100%;
+  transition: all 0.2s;
+}
+.clock-item.active { color: var(--navy); font-weight: 700; font-size: 17px; }
+
+/* TOGGLE */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+.toggle-label { font-size: 14px; color: var(--navy); font-weight: 500; }
+.toggle-wrap {
+  width: 48px; height: 26px;
+  background: var(--sage); border-radius: 99px;
+  position: relative; cursor: pointer; transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle-wrap.off { background: var(--border); }
+.toggle-knob {
+  position: absolute; top: 3px; right: 3px;
+  width: 20px; height: 20px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  transition: all 0.2s;
+}
+.toggle-wrap.off .toggle-knob { right: auto; left: 3px; }
+
+/* SAVE BTN */
+.save-btn {
+  width: 100%; padding: 16px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  border: none; border-radius: var(--radius);
+  color: #fff; font-family:'Sora',sans-serif;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 6px 20px rgba(28,43,58,0.25);
+  margin-top: 4px;
+}
+.save-btn:hover { transform: translateY(-1px); }
+
+/* ── TAB 3: SUMMARY ── */
+.alert-card {
+  background: var(--red-bg);
+  border: 2px solid var(--red);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  animation: pulse 2s infinite;
+}
+.alert-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.alert-icon { font-size: 22px; }
+.alert-title { font-size: 16px; font-weight: 700; color: var(--red); }
+.alert-body { font-size: 13px; color: #A04040; line-height: 1.5; margin-bottom: 14px; }
+.call-now-btn {
+  width: 100%; padding: 13px;
+  background: var(--red); border: none; border-radius: var(--radius-sm);
+  color: #fff; font-family:'Sora',sans-serif; font-size:14px; font-weight:700;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.call-now-btn:hover { opacity: 0.9; }
+
+.day-nav {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.day-nav-arrow {
+  width: 34px; height: 34px;
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--text-mid);
+  transition: all 0.15s;
+}
+.day-nav-arrow:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+.day-nav-arrow.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+.day-nav-center { text-align: center; }
+.day-nav-date { font-size: 15px; font-weight: 700; color: var(--navy); }
+.day-nav-status { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.day-nav-status.ok { color: var(--sage); }
+.day-nav-status.err { color: var(--red); }
+
+.summary-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.summary-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+}
+.summary-item-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.summary-item-text { font-size: 13px; color: var(--navy); line-height: 1.4; }
+.summary-item.warn { border-color: #F5C06A; background: #FFFBF0; }
+.summary-item.warn .summary-item-text { color: #8A6520; }
+
+.follow-up-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #FFF3E0; border: 1.5px solid #F5C06A;
+  border-radius: 99px; padding: 7px 14px;
+  font-size: 12px; font-weight: 600; color: #8A6520;
+}
+
+/* ════════════════════════════════════
+   ELDER HOME
+════════════════════════════════════ */
+#s-elder-home {
+  background: linear-gradient(180deg, var(--sage-bg) 0%, var(--cream) 40%);
+}
+
+.elder-header {
+  padding: 20px 24px 24px;
+}
+.elder-header-top {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+}
+.elder-greeting { font-size: 13px; color: var(--text-light); margin-bottom: 3px; }
+.elder-name { font-family:'Lora',serif; font-size:24px; color: var(--navy); font-weight:600; }
+
+.today-status-card {
+  background: linear-gradient(135deg, var(--sage) 0%, #4A8060 100%);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: 0 8px 24px rgba(123,166,138,0.3);
+}
+.status-check { font-size: 36px; }
+.status-info {}
+.status-main { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+.status-time { font-size: 12px; color: rgba(255,255,255,0.7); }
+.next-call-badge {
+  margin-left: auto; background: rgba(255,255,255,0.2);
+  border-radius: 10px; padding: 8px 12px; text-align: center;
+}
+.next-call-time { font-size: 15px; font-weight: 700; color: #fff; }
+.next-call-label { font-size: 10px; color: rgba(255,255,255,0.7); }
+
+.elder-tab-bar {
+  display: flex; background: var(--white);
+  border-top: 1.5px solid var(--border);
+  padding: 8px 0 20px; flex-shrink: 0;
+}
+.elder-tab-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; cursor: pointer; padding: 6px 0;
+}
+.elder-tab-item .tab-label { color: var(--text-light); }
+.elder-tab-item.active .tab-label { color: var(--sage); }
+.elder-tab-item.active .tab-icon { transform: translateY(-2px); }
+
+.elder-tab-panel { display: none; flex: 1; overflow-y: auto; padding: 16px 20px 0; }
+.elder-tab-panel::-webkit-scrollbar { display: none; }
+.elder-tab-panel.active { display: block; }
+
+/* Call history items */
+.call-history-item {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 10px; box-shadow: var(--shadow-sm);
+}
+.call-history-icon {
+  width: 44px; height: 44px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.call-history-icon.ok { background: #E8F5EE; }
+.call-history-icon.miss { background: var(--red-bg); }
+.call-history-meta {}
+.call-history-title { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 2px; }
+.call-history-time { font-size: 12px; color: var(--text-light); }
+.call-history-badge {
+  margin-left: auto; padding: 4px 10px;
+  border-radius: 99px; font-size: 11px; font-weight: 600;
+}
+.call-history-badge.ok { background: #E8F5EE; color: var(--sage); }
+.call-history-badge.miss { background: var(--red-bg); color: var(--red); }
+
+/* SOS */
+.sos-card {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 24px 20px;
+  text-align: center; margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.sos-btn {
+  width: 100%; padding: 22px;
+  background: linear-gradient(135deg, var(--red), #C04040);
+  border: none; border-radius: var(--radius);
+  color: #fff; font-family:'Sora',sans-serif;
+  font-size: 20px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 8px 24px rgba(217,91,91,0.4);
+  margin-bottom: 14px;
+}
+.sos-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(217,91,91,0.5); }
+.sos-btn:active { transform: scale(0.97); }
+.sos-hint { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+
+.call-family-btn {
+  width: 100%; padding: 18px;
+  background: var(--white);
+  border: 2px solid var(--sage);
+  border-radius: var(--radius);
+  color: var(--sage); font-family:'Sora',sans-serif;
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.call-family-btn:hover { background: var(--sage); color: #fff; }
+
+/* SUMMARY STATE B — no alert */
+#summary-state-b { display: none; }
+
+/* ── UTILITY ── */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.spacer { height: 16px; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ════════ WELCOME ════════ -->
+  <div id="s-welcome" class="screen active">
+    <div class="status-bar" style="background:var(--navy);">
+      <span>9:41</span>
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:var(--navy);border-radius:0 0 20px 20px;"></div>
+      <span>●●● 100%</span>
+    </div>
+
+    <div style="flex:1;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 32px;">
+      <div class="welcome-logo">📞</div>
+      <div class="welcome-title">CareRing</div>
+      <div class="welcome-sub">Bridging the gap between<br>AI and human connection</div>
+
+      <div class="welcome-question">Who are you?</div>
+
+      <button class="role-btn elder" onclick="goTo('s-elder-code')">
+        <div class="role-icon">🧓</div>
+        <div class="role-text">
+          <div class="role-name">I'm an Elder</div>
+          <div class="role-desc">Get your unique connection code</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </button>
+
+      <button class="role-btn caretaker" onclick="goTo('s-care-connect')">
+        <div class="role-icon">💙</div>
+        <div class="role-text">
+          <div class="role-name">I'm a Caretaker</div>
+          <div class="role-desc">Set up care for your loved one</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════ ELDER CODE ════════ -->
+  <div id="s-elder-code" class="screen">
+    <div class="status-bar sage-bar">
+      <span>9:41</span>
+      <div class="status-notch" style="background:var(--sage-bg);"></div>
+      <span style="color:var(--navy);">●●● 100%</span>
+    </div>
+
+    <div class="page-header anim">
+      <div class="back-btn" onclick="goTo('s-welcome')">‹</div>
+      <div class="page-header-title">Your Code</div>
+    </div>
+
+    <div class="elder-hero anim anim-d1">
+      <div class="elder-hero-icon">🔑</div>
+      <div class="elder-hero-title">Your Unique Code</div>
+      <div class="elder-hero-sub">Share this with your family caretaker<br>so they can connect to you</div>
+    </div>
+
+    <div class="code-card anim anim-d2">
+      <div class="code-label">Your Code</div>
+      <div class="code-display">4ARG5</div>
+      <div class="code-hint">Show this to your caretaker or read it to them over the phone</div>
+    </div>
+
+    <button class="btn-outline-sage anim anim-d3" onclick="void(0)">🔄 &nbsp;Generate New Code</button>
+  </div>
+
+  <!-- ════════ CARETAKER CONNECT ════════ -->
+  <div id="s-care-connect" class="screen">
+    <div class="status-bar" style="background:var(--navy);">
+      <span>9:41</span>
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:var(--navy);border-radius:0 0 20px 20px;"></div>
+      <span>●●● 100%</span>
+    </div>
+
+    <div class="connect-hero">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div class="back-btn" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);color:#fff;" onclick="goTo('s-welcome')">‹</div>
+        <div class="connect-hero-tag">🔗 Connect</div>
+      </div>
+      <div class="connect-hero-title">Link Your Elder</div>
+      <div class="connect-hero-sub">Enter the code shown on your elder's phone to connect your accounts.</div>
+    </div>
+
+    <div class="form-card anim">
+      <div class="form-group">
+        <div class="form-label">Elder's Name</div>
+        <input class="form-input" type="text" placeholder="e.g. Margaret">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Elder's Code</div>
+        <input class="form-input code-input" type="text" placeholder="· · · · ·" maxlength="5">
+      </div>
+      <button class="btn-primary" onclick="goTo('s-care-home')">Connect &amp; Continue →</button>
+    </div>
+  </div>
+
+  <!-- ════════ CARETAKER HOME ════════ -->
+  <div id="s-care-home" class="screen">
+    <div class="status-bar">
+      <span>9:41</span>
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:var(--navy);border-radius:0 0 20px 20px;"></div>
+      <span>●●● 100%</span>
+    </div>
+
+    <!-- Header -->
+    <div class="home-header">
+      <div class="home-header-top">
+        <div>
+          <div class="home-greeting" id="care-date-line">Good morning,</div>
+          <div class="home-name">Sarah 👋</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:2px;" id="care-date-display"></div>
+          <div class="avatar">👤</div>
+        </div>
+      </div>
+      <div class="elder-card-mini">
+        <div class="elder-mini-avatar">🧓</div>
+        <div>
+          <div class="elder-mini-name">Margaret</div>
+          <div class="elder-mini-status"><span class="status-dot-sm"></span>Connected · Code: 4ARG5</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Panels -->
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+
+      <!-- TAB 1: AI Calls -->
+      <div id="tab-ai" class="tab-panel active">
+        <div class="section-label">Topics to Ask About</div>
+        <div class="card">
+          <div class="dropdown-wrap">
+            <div class="dropdown-trigger" onclick="toggleDropdown()">
+              <span id="dd-label">2 topics selected</span>
+              <span class="dropdown-chevron" id="dd-chevron">▾</span>
+            </div>
+            <div class="dropdown-menu" id="dd-menu">
+              <div class="dropdown-option selected" onclick="selectTopic(this)">
+                <div class="check-icon checked" id="chk-0">✓</div> 💊 Medication check
+              </div>
+              <div class="dropdown-option selected" onclick="selectTopic(this)">
+                <div class="check-icon checked" id="chk-1">✓</div> ☀️ How's your day
+              </div>
+              <div class="dropdown-option" onclick="selectTopic(this)">
+                <div class="check-icon" id="chk-2"></div> 🚶 What did you do
+              </div>
+              <div class="dropdown-option" onclick="selectTopic(this)">
+                <div class="check-icon" id="chk-3"></div> 🆘 Need any help
+              </div>
+              <div class="dropdown-option" onclick="selectTopic(this)">
+                <div class="check-icon" id="chk-4"></div> 😴 How did you sleep
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">Calls Per Day</div>
+        <div class="card">
+          <div class="count-selector">
+            <div class="count-btn" onclick="setCount(this,1)">1×</div>
+            <div class="count-btn active" onclick="setCount(this,2)">2×</div>
+            <div class="count-btn" onclick="setCount(this,3)">3×</div>
+          </div>
+          <div id="time-picks" style="margin-top:14px;">
+            <div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">Set call times (tap to edit):</div>
+            <div class="time-pills" id="time-pill-list">
+              <div class="time-pill active editable-time" onclick="openTimePicker(this, 0)">9:00 AM ✎</div>
+              <div class="time-pill active editable-time" onclick="openTimePicker(this, 1)">4:00 PM ✎</div>
+              <div class="time-pill editable-time" style="display:none;" onclick="openTimePicker(this, 2)">8:00 PM ✎</div>
+            </div>
+          </div>
+
+          <!-- Time Picker Modal -->
+          <div id="time-picker-modal" style="display:none;position:absolute;left:16px;right:16px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:100;padding:18px;top:50%;transform:translateY(-50%);">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px;">Set Call Time</div>
+            <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:16px;">
+              <select id="tp-hour" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy);background:var(--cream);outline:none;text-align:center;">
+                <option>1</option><option>2</option><option>3</option><option>4</option>
+                <option>5</option><option>6</option><option>7</option><option>8</option>
+                <option selected>9</option><option>10</option><option>11</option><option>12</option>
+              </select>
+              <span style="font-size:22px;font-weight:700;color:var(--navy);">:</span>
+              <select id="tp-min" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy);background:var(--cream);outline:none;text-align:center;">
+                <option selected>00</option><option>15</option><option>30</option><option>45</option>
+              </select>
+              <select id="tp-ampm" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy);background:var(--cream);outline:none;text-align:center;">
+                <option selected>AM</option><option>PM</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="cancelTimePicker()" style="flex:1;padding:11px;background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--text-mid);cursor:pointer;">Cancel</button>
+              <button onclick="confirmTimePicker()" style="flex:2;padding:11px;background:linear-gradient(135deg,var(--amber),#D4782A);border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">Set Time</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="save-btn anim anim-d4" onclick="showSaved()">Save Settings ✓</button>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- TAB 2: My Calls -->
+      <div id="tab-calls" class="tab-panel">
+        <div class="section-label">Remind Me On</div>
+        <div class="card">
+          <div class="days-grid">
+            <div class="day-btn active" onclick="toggleDay(this)">M</div>
+            <div class="day-btn active" onclick="toggleDay(this)">T</div>
+            <div class="day-btn" onclick="toggleDay(this)">W</div>
+            <div class="day-btn active" onclick="toggleDay(this)">T</div>
+            <div class="day-btn active" onclick="toggleDay(this)">F</div>
+            <div class="day-btn" onclick="toggleDay(this)">S</div>
+            <div class="day-btn" onclick="toggleDay(this)">S</div>
+          </div>
+        </div>
+
+        <div class="section-label">Remind Me At</div>
+        <div class="card">
+          <div class="clock-wrap">
+            <div class="clock-highlight-line"></div>
+            <div class="clock-scroller" id="clockScroller">
+              <div class="clock-item">5:00 PM</div>
+              <div class="clock-item">5:30 PM</div>
+              <div class="clock-item">6:00 PM</div>
+              <div class="clock-item">6:30 PM</div>
+              <div class="clock-item active">7:00 PM</div>
+              <div class="clock-item">7:30 PM</div>
+              <div class="clock-item">8:00 PM</div>
+              <div class="clock-item">8:30 PM</div>
+              <div class="clock-item">9:00 PM</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="toggle-row">
+            <div class="toggle-label">Enable reminder</div>
+            <div class="toggle-wrap" onclick="toggleSwitch(this)">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="save-btn" onclick="showSaved()">Save Reminder ✓</button>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- TAB 3: Summary -->
+      <div id="tab-summary" class="tab-panel">
+
+        <!-- State A: No response (shown by default) -->
+        <div id="summary-state-a">
+          <div class="day-nav" style="margin-bottom:12px;">
+            <div class="day-nav-arrow" onclick="showYesterday()">‹</div>
+            <div class="day-nav-center">
+              <div class="day-nav-date" id="summary-date-a">Today — Mar 7</div>
+              <div class="day-nav-status err">No response ✗</div>
+            </div>
+            <div class="day-nav-arrow disabled">›</div>
+          </div>
+
+          <div class="alert-card">
+            <div class="alert-header">
+              <span class="alert-icon">🚨</span>
+              <span class="alert-title">No Response Today!</span>
+            </div>
+            <div class="alert-body">Margaret missed the 9:00 AM AI call. Please check on her.</div>
+            <button class="call-now-btn" onclick="simulateCall(this)">📞 Call Now</button>
+          </div>
+        </div>
+
+        <!-- State B: Yesterday with summary -->
+        <div id="summary-state-b">
+          <div class="day-nav">
+            <div class="day-nav-arrow" onclick="void(0)">‹</div>
+            <div class="day-nav-center">
+              <div class="day-nav-date" id="summary-date-b">Yesterday — Mar 6</div>
+              <div class="day-nav-status ok">Call completed ✓</div>
+            </div>
+            <div class="day-nav-arrow" onclick="showToday()">›</div>
+          </div>
+
+          <div class="summary-items">
+            <div class="summary-item">
+              <span class="summary-item-icon">💊</span>
+              <span class="summary-item-text">Took her medication ✅</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-item-icon">😊</span>
+              <span class="summary-item-text">Feeling good today</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-item-icon">🌳</span>
+              <span class="summary-item-text">Went for a short walk in the morning</span>
+            </div>
+            <div class="summary-item warn">
+              <span class="summary-item-icon">⚠️</span>
+              <span class="summary-item-text">Mentioned some knee pain — may need attention</span>
+            </div>
+          </div>
+
+          <div class="follow-up-pill">🟡 &nbsp;Follow up: knee pain</div>
+        </div>
+
+        <div class="spacer"></div>
+      </div>
+
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <div class="tab-item active" id="care-tab-ai" onclick="switchCareTab('ai')">
+        <div class="tab-icon">⚙️</div>
+        <div class="tab-label">AI Calls</div>
+      </div>
+      <div class="tab-item" id="care-tab-calls" onclick="switchCareTab('calls')">
+        <div class="tab-icon">📞</div>
+        <div class="tab-label">My Calls</div>
+      </div>
+      <div class="tab-item" id="care-tab-summary" onclick="switchCareTab('summary')">
+        <div class="tab-icon">📋</div>
+        <div class="tab-label">Summary</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ ELDER HOME ════════ -->
+  <div id="s-elder-home" class="screen">
+    <div class="status-bar sage-bar">
+      <span id="elder-time-display">9:41</span>
+      <div class="status-notch" style="background:var(--sage-bg);"></div>
+      <span style="color:var(--navy);">●●● 100%</span>
+    </div>
+
+    <!-- Elder Panels -->
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--sage-bg);">
+
+      <!-- ELDER TAB 1: Home -->
+      <div id="elder-tab-home" class="elder-tab-panel active" style="background:var(--sage-bg);padding:24px 20px 0;">
+
+        <!-- Greeting -->
+        <div style="margin-bottom:20px;">
+          <div style="font-size:15px;color:var(--text-mid);margin-bottom:4px;" id="elder-greeting-text">Good morning,</div>
+          <div style="font-family:'Lora',serif;font-size:32px;font-weight:600;color:var(--navy);line-height:1.2;">Margaret 🌸</div>
+          <div style="font-size:13px;color:var(--text-light);margin-top:4px;" id="elder-date-display"></div>
+        </div>
+
+        <!-- Status Card -->
+        <div style="background:linear-gradient(135deg,var(--sage) 0%,#4A8060 100%);border-radius:24px;padding:24px;margin-bottom:20px;box-shadow:0 8px 24px rgba(123,166,138,0.35);" class="anim anim-d1">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="font-size:48px;line-height:1;">✅</div>
+            <div style="flex:1;">
+              <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:4px;">Call done today!</div>
+              <div style="font-size:14px;color:rgba(255,255,255,0.75);">9:04 AM · 3 minutes</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;background:rgba(255,255,255,0.15);border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:14px;color:rgba(255,255,255,0.8);">Next AI call</div>
+            <div style="font-size:20px;font-weight:700;color:#fff;">4:00 PM</div>
+          </div>
+        </div>
+
+        <!-- Big readable message -->
+        <div style="background:var(--white);border-radius:20px;padding:24px;text-align:center;border:1.5px solid var(--border);box-shadow:var(--shadow-sm);" class="anim anim-d2">
+          <div style="font-size:40px;margin-bottom:10px;">☀️</div>
+          <div style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px;">You're all good!</div>
+          <div style="font-size:15px;color:var(--text-mid);line-height:1.7;">Sarah has been notified<br>of your check-in today.</div>
+        </div>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- ELDER TAB 2: Calls -->
+      <div id="elder-tab-calls" class="elder-tab-panel" style="background:var(--sage-bg);padding:24px 20px 0;">
+        <div style="font-size:13px;font-weight:700;color:var(--text-light);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;">Recent Calls</div>
+
+        <div class="call-history-item anim" style="padding:20px 18px;">
+          <div class="call-history-icon ok" style="width:52px;height:52px;font-size:24px;border-radius:16px;">✅</div>
+          <div class="call-history-meta" style="flex:1;">
+            <div class="call-history-title" style="font-size:16px;">Today — AI Check-in</div>
+            <div class="call-history-time" style="font-size:14px;margin-top:3px;">9:04 AM · 3 min</div>
+          </div>
+          <div class="call-history-badge ok" style="font-size:13px;padding:6px 14px;">Done</div>
+        </div>
+        <div class="call-history-item anim anim-d1" style="padding:20px 18px;">
+          <div class="call-history-icon ok" style="width:52px;height:52px;font-size:24px;border-radius:16px;">📞</div>
+          <div class="call-history-meta" style="flex:1;">
+            <div class="call-history-title" style="font-size:16px;">Yesterday — Sarah called</div>
+            <div class="call-history-time" style="font-size:14px;margin-top:3px;">7:12 PM · 8 min</div>
+          </div>
+          <div class="call-history-badge ok" style="font-size:13px;padding:6px 14px;">Done</div>
+        </div>
+        <div class="call-history-item anim anim-d2" style="padding:20px 18px;">
+          <div class="call-history-icon miss" style="width:52px;height:52px;font-size:24px;border-radius:16px;">❌</div>
+          <div class="call-history-meta" style="flex:1;">
+            <div class="call-history-title" style="font-size:16px;">Mar 5 — AI Check-in</div>
+            <div class="call-history-time" style="font-size:14px;margin-top:3px;">9:00 AM · Missed</div>
+          </div>
+          <div class="call-history-badge miss" style="font-size:13px;padding:6px 14px;">Missed</div>
+        </div>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- ELDER TAB 3: Help -->
+      <div id="elder-tab-help" class="elder-tab-panel" style="background:var(--sage-bg);padding:24px 20px 0;">
+        <div style="font-size:13px;font-weight:700;color:var(--text-light);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;">Need Help?</div>
+
+        <!-- Giant SOS -->
+        <button onclick="triggerSOS()" style="width:100%;padding:32px 20px;background:linear-gradient(135deg,var(--red),#C04040);border:none;border-radius:24px;color:#fff;font-family:'Sora',sans-serif;font-size:26px;font-weight:700;cursor:pointer;box-shadow:0 10px 30px rgba(217,91,91,0.45);margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:10px;" class="anim">
+          <span style="font-size:52px;">🆘</span>
+          Alert My Family
+        </button>
+        <div style="font-size:14px;color:var(--text-light);text-align:center;margin-bottom:20px;line-height:1.7;">Tapping this sends an immediate<br>alert to <strong style="color:var(--navy);">Sarah's</strong> phone.</div>
+
+        <!-- Call button -->
+        <button style="width:100%;padding:24px 20px;background:var(--white);border:2.5px solid var(--sage);border-radius:24px;color:var(--sage);font-family:'Sora',sans-serif;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:var(--shadow-sm);" class="anim anim-d1">
+          <span style="font-size:32px;">📞</span> Call Sarah
+        </button>
+        <div class="spacer"></div>
+      </div>
+
+    </div>
+
+    <!-- Elder Tab Bar — large labels -->
+    <div style="display:flex;background:var(--white);border-top:1.5px solid var(--border);padding:10px 0 22px;flex-shrink:0;">
+      <div class="elder-tab-item active" id="et-home" onclick="switchElderTab('home')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 0;">
+        <div style="font-size:28px;transition:transform 0.2s;" class="et-icon">🏠</div>
+        <div style="font-size:13px;font-weight:700;color:var(--sage);" class="et-lbl">Home</div>
+      </div>
+      <div class="elder-tab-item" id="et-calls" onclick="switchElderTab('calls')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 0;">
+        <div style="font-size:28px;" class="et-icon">📞</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text-light);" class="et-lbl">Calls</div>
+      </div>
+      <div class="elder-tab-item" id="et-help" onclick="switchElderTab('help')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 0;">
+        <div style="font-size:28px;" class="et-icon">🆘</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text-light);" class="et-lbl">Help</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end app-shell -->
+
+<script>
+// ── LIVE DATE & TIME ──
+function updateDateTime() {
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const hours = now.getHours();
+  const mins = String(now.getMinutes()).padStart(2,'0');
+  const timeStr = `${hours % 12 || 12}:${mins} ${hours >= 12 ? 'PM' : 'AM'}`;
+  const dateStr = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  const todayShort = `Today — ${months[now.getMonth()]} ${now.getDate()}`;
+
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  const yesterdayShort = `Yesterday — ${months[yesterday.getMonth()]} ${yesterday.getDate()}`;
+
+  const greeting = hours < 12 ? 'Good morning,' : hours < 17 ? 'Good afternoon,' : 'Good evening,';
+
+  const cd = document.getElementById('care-date-display');
+  const cdl = document.getElementById('care-date-line');
+  const ed = document.getElementById('elder-date-display');
+  const etd = document.getElementById('elder-time-display');
+  const eg = document.getElementById('elder-greeting-text');
+  const sda = document.getElementById('summary-date-a');
+  const sdb = document.getElementById('summary-date-b');
+
+  if (cd) cd.textContent = dateStr;
+  if (cdl) cdl.textContent = greeting;
+  if (ed) ed.textContent = dateStr;
+  if (etd) etd.textContent = timeStr;
+  if (eg) eg.textContent = greeting;
+  if (sda) sda.textContent = todayShort;
+  if (sdb) sdb.textContent = yesterdayShort;
+}
+updateDateTime();
+setInterval(updateDateTime, 30000);
+
+// ── NAVIGATION ──
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const screen = document.getElementById(screenId);
+  screen.classList.add('active');
+  screen.querySelectorAll('.anim').forEach(el => {
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = '';
+  });
+  updateDateTime();
+}
+
+// ── CARE TABS ──
+function switchCareTab(tab) {
+  ['ai','calls','summary'].forEach(t => {
+    document.getElementById('tab-' + t).classList.remove('active');
+    document.getElementById('care-tab-' + t).classList.remove('active');
+  });
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('care-tab-' + tab).classList.add('active');
+}
+
+// ── ELDER TABS ──
+function switchElderTab(tab) {
+  ['home','calls','help'].forEach(t => {
+    const panel = document.getElementById('elder-tab-' + t);
+    const btn = document.getElementById('et-' + t);
+    if (panel) panel.classList.remove('active');
+    if (btn) {
+      btn.classList.remove('active');
+      const lbl = btn.querySelector('.et-lbl');
+      if (lbl) lbl.style.color = 'var(--text-light)';
+    }
+  });
+  const activePanel = document.getElementById('elder-tab-' + tab);
+  const activeBtn = document.getElementById('et-' + tab);
+  if (activePanel) activePanel.classList.add('active');
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    const lbl = activeBtn.querySelector('.et-lbl');
+    if (lbl) lbl.style.color = 'var(--sage)';
+  }
+}
+
+// ── DROPDOWN ──
+let ddOpen = false;
+function toggleDropdown() {
+  ddOpen = !ddOpen;
+  document.getElementById('dd-menu').classList.toggle('open', ddOpen);
+  document.getElementById('dd-chevron').style.transform = ddOpen ? 'rotate(180deg)' : '';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown-wrap')) {
+    ddOpen = false;
+    const menu = document.getElementById('dd-menu');
+    if (menu) menu.classList.remove('open');
+    const chev = document.getElementById('dd-chevron');
+    if (chev) chev.style.transform = '';
+  }
+});
+function selectTopic(el) {
+  el.classList.toggle('selected');
+  const check = el.querySelector('.check-icon');
+  check.classList.toggle('checked');
+  check.textContent = check.classList.contains('checked') ? '✓' : '';
+  const count = document.querySelectorAll('.dropdown-option.selected').length;
+  document.getElementById('dd-label').textContent = count + ' topic' + (count !== 1 ? 's' : '') + ' selected';
+}
+
+// ── CALLS PER DAY ──
+function setCount(btn, n) {
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const pills = document.querySelectorAll('.editable-time');
+  pills.forEach((p, i) => {
+    p.style.display = i < n ? '' : 'none';
+  });
+}
+
+// ── TIME PICKER ──
+let currentTimePill = null;
+let currentTimePillIndex = 0;
+function openTimePicker(pill, index) {
+  currentTimePill = pill;
+  currentTimePillIndex = index;
+  const text = pill.textContent.replace(' ✎','').trim();
+  const match = text.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (match) {
+    document.getElementById('tp-hour').value = match[1];
+    document.getElementById('tp-min').value = match[2];
+    document.getElementById('tp-ampm').value = match[3].toUpperCase();
+  }
+  const modal = document.getElementById('time-picker-modal');
+  modal.style.display = 'block';
+  // position relative to card
+  const card = pill.closest('.card');
+  if (card) card.style.position = 'relative';
+}
+function cancelTimePicker() {
+  document.getElementById('time-picker-modal').style.display = 'none';
+  currentTimePill = null;
+}
+function confirmTimePicker() {
+  const h = document.getElementById('tp-hour').value;
+  const m = document.getElementById('tp-min').value;
+  const ap = document.getElementById('tp-ampm').value;
+  if (currentTimePill) {
+    currentTimePill.textContent = `${h}:${m} ${ap} ✎`;
+  }
+  document.getElementById('time-picker-modal').style.display = 'none';
+  currentTimePill = null;
+}
+
+// ── DAYS TOGGLE ──
+function toggleDay(el) { el.classList.toggle('active'); }
+
+// ── TOGGLE SWITCH ──
+function toggleSwitch(el) { el.classList.toggle('off'); }
+
+// ── SUMMARY NAV ──
+function showYesterday() {
+  document.getElementById('summary-state-a').style.display = 'none';
+  document.getElementById('summary-state-b').style.display = 'block';
+}
+function showToday() {
+  document.getElementById('summary-state-b').style.display = 'none';
+  document.getElementById('summary-state-a').style.display = 'block';
+}
+
+// ── CALL NOW SIMULATION ──
+function simulateCall(btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '📲 Calling Margaret...';
+  btn.style.background = 'var(--sage)';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.innerHTML = '✅ Call Connected';
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.style.background = '';
+      btn.disabled = false;
+    }, 2000);
+  }, 1500);
+}
+
+// ── SOS ──
+function triggerSOS() {
+  const btn = event.currentTarget;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span style="font-size:52px;">✅</span> Alert Sent!';
+  btn.style.background = 'linear-gradient(135deg, var(--sage), #4A8060)';
+  setTimeout(() => {
+    btn.innerHTML = orig;
+    btn.style.background = '';
+  }, 2500);
+}
+
+// ── SAVE FEEDBACK ──
+function showSaved() {
+  const btn = event.currentTarget;
+  const orig = btn.textContent;
+  btn.textContent = '✅ Saved!';
+  btn.style.background = 'linear-gradient(135deg, var(--sage), #4A8060)';
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.style.background = '';
+  }, 1800);
+}
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown', e => {
+  if (e.key === '1') goTo('s-welcome');
+  if (e.key === '2') goTo('s-elder-code');
+  if (e.key === '3') goTo('s-care-connect');
+  if (e.key === '4') goTo('s-care-home');
+  if (e.key === '5') goTo('s-elder-home');
+});
+</script>
+
+<!-- Demo nav strip outside phone -->
+<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;background:rgba(0,0,0,0.7);padding:10px 16px;border-radius:99px;backdrop-filter:blur(8px);">
+  <button onclick="goTo('s-welcome')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Welcome</button>
+  <button onclick="goTo('s-elder-code')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Elder P2</button>
+  <button onclick="goTo('s-care-connect')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Caretaker P2</button>
+  <button onclick="goTo('s-care-home')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Care Home</button>
+  <button onclick="goTo('s-elder-home')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Elder Home</button>
+</div>
+
+</body>
+</html>
