@@ -15,6 +15,7 @@ const {
   BASE_URL,
   GEMINI_API_KEY,
   TWILIO_AUTH_TOKEN,
+  NODE_ENV = "development",
 } = process.env;
 
 if (!BASE_URL || !GEMINI_API_KEY || !TWILIO_AUTH_TOKEN) {
@@ -31,11 +32,12 @@ const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use("/audio", express.static(path.join(__dirname, "public", "audio")));
 
-const sessions = new Map();
 const audioDir = path.join(__dirname, "public", "audio");
 fs.mkdirSync(audioDir, { recursive: true });
+app.use("/audio", express.static(audioDir));
+
+const sessions = new Map();
 
 const SYSTEM_PROMPT = `
 You are CareRing, a warm, patient, elderly-friendly phone companion.
@@ -60,7 +62,7 @@ Conversation style rules:
 - Do not mention policies or that you are following instructions.
 - Never say you are replacing medical professionals.
 
-When summarizing the user's state internally, pay attention to:
+When summarizing the caller's state internally, pay attention to:
 - mood
 - medication taken or missed
 - food/water
@@ -82,30 +84,37 @@ function getSession(callSid) {
         loneliness: null,
         riskFlags: [],
       },
+      createdAt: new Date().toISOString(),
     });
   }
+
   return sessions.get(callSid);
 }
 
 function updateSummaryFromText(session, text) {
   const lower = text.toLowerCase();
 
-  if (["sad", "lonely", "upset", "worried", "scared"].some((w) => lower.includes(w))) {
+  if (["sad", "lonely", "upset", "worried", "scared", "tired", "happy", "okay", "fine"].some((w) => lower.includes(w))) {
     session.summary.mood = text;
   }
-  if (lower.includes("medicine") || lower.includes("medication") || lower.includes("pill")) {
+
+  if (["medicine", "medication", "pill", "tablet", "dose"].some((w) => lower.includes(w))) {
     session.summary.medication = text;
   }
-  if (lower.includes("ate") || lower.includes("meal") || lower.includes("breakfast") || lower.includes("lunch") || lower.includes("dinner")) {
+
+  if (["ate", "eating", "meal", "breakfast", "lunch", "dinner", "food"].some((w) => lower.includes(w))) {
     session.summary.meals = text;
   }
-  if (lower.includes("water") || lower.includes("drink") || lower.includes("hydrated")) {
+
+  if (["water", "drink", "drank", "hydrated", "tea", "juice"].some((w) => lower.includes(w))) {
     session.summary.hydration = text;
   }
-  if (lower.includes("cat") || lower.includes("dog") || lower.includes("pet") || lower.includes("fed")) {
+
+  if (["cat", "dog", "pet", "fed", "litter"].some((w) => lower.includes(w))) {
     session.summary.pets = text;
   }
-  if (lower.includes("lonely") || lower.includes("call my daughter") || lower.includes("call my son") || lower.includes("caretaker")) {
+
+  if (["lonely", "caretaker", "daughter", "son", "call someone", "talk to someone"].some((w) => lower.includes(w))) {
     session.summary.loneliness = text;
   }
 
@@ -121,6 +130,8 @@ function updateSummaryFromText(session, text) {
     "bleeding",
     "confused",
     "not safe",
+    "hurt",
+    "injured",
   ];
 
   for (const word of riskWords) {
@@ -133,7 +144,7 @@ function updateSummaryFromText(session, text) {
 async function generateReply(callSid, userText) {
   const session = getSession(callSid);
 
-  session.history.push({ role: "user", text: userText });
+  session.history.push({ role: "user", text: userText, at: new Date().toISOString() });
   updateSummaryFromText(session, userText);
 
   const conversation = session.history
@@ -164,8 +175,24 @@ Requirements:
   });
 
   const text = response.text?.trim() || "Hello, I’m here with you. Have you had some water today?";
-  session.history.push({ role: "assistant", text });
+  session.history.push({ role: "assistant", text, at: new Date().toISOString() });
+
   return text;
+}
+
+async function saveWaveFile(filename, pcmData, channels = 1, rate = 24000, sampleWidth = 2) {
+  return new Promise((resolve, reject) => {
+    const writer = new wav.FileWriter(filename, {
+      channels,
+      sampleRate: rate,
+      bitDepth: sampleWidth * 8,
+    });
+
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+    writer.write(pcmData);
+    writer.end();
+  });
 }
 
 async function synthesizeSpeech(text) {
@@ -191,7 +218,9 @@ async function synthesizeSpeech(text) {
   });
 
   const data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!data) throw new Error("No audio returned from Gemini TTS.");
+  if (!data) {
+    throw new Error("No audio returned from Gemini TTS.");
+  }
 
   const audioBuffer = Buffer.from(data, "base64");
   const filename = `${crypto.randomUUID()}.wav`;
@@ -201,73 +230,114 @@ async function synthesizeSpeech(text) {
   return `${BASE_URL}/audio/${filename}`;
 }
 
-async function saveWaveFile(filename, pcmData, channels = 1, rate = 24000, sampleWidth = 2) {
-  return new Promise((resolve, reject) => {
-    const writer = new wav.FileWriter(filename, {
-      channels,
-      sampleRate: rate,
-      bitDepth: sampleWidth * 8,
-    });
-
-    writer.on("finish", resolve);
-    writer.on("error", reject);
-    writer.write(pcmData);
-    writer.end();
-  });
-}
-
 function isRequestFromTwilio(req) {
+  if (NODE_ENV !== "production") {
+    return true;
+  }
+
   const signature = req.header("X-Twilio-Signature");
-  if (!signature) return false;
+  if (!signature) {
+    return false;
+  }
 
   const url = `${BASE_URL}${req.originalUrl}`;
   return twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, url, req.body);
 }
 
+function buildGather(twiml) {
+  const gather = twiml.gather({
+    input: "speech",
+    action: `${BASE_URL}/gather`,
+    method: "POST",
+    speechTimeout: "auto",
+    speechModel: "phone_call",
+    enhanced: true,
+    language: "en-US",
+    actionOnEmptyResult: true,
+  });
+
+  gather.pause({ length: 1 });
+  return gather;
+}
+
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, environment: NODE_ENV });
+});
+
+app.get("/test-ai", async (_req, res) => {
+  try {
+    const reply = await generateReply(
+      "test-call",
+      "I am feeling a little lonely today and I forgot to drink water."
+    );
+
+    res.json({ ok: true, reply });
+  } catch (error) {
+    console.error("Error in /test-ai:", error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.get("/test-tts", async (_req, res) => {
+  try {
+    const audioUrl = await synthesizeSpeech(
+      "Hello, this is CareRing checking in. Have you had some water today?"
+    );
+
+    res.json({ ok: true, audioUrl });
+  } catch (error) {
+    console.error("Error in /test-tts:", error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 app.post("/voice", async (req, res) => {
+  console.log("VOICE HIT");
+  console.log("Body:", req.body);
+
   if (!isRequestFromTwilio(req)) {
+    console.log("Twilio signature failed on /voice");
     return res.status(403).send("Invalid Twilio signature");
   }
 
   const twiml = new twilio.twiml.VoiceResponse();
-  const callSid = req.body.CallSid;
-  const firstMessage = "Hello, this is CareRing checking in. Take your time. How are you feeling today?";
+  const callSid = req.body.CallSid || crypto.randomUUID();
+  getSession(callSid);
 
   try {
+    const firstMessage = "Hello, this is CareRing checking in. Take your time. How are you feeling today?";
     const audioUrl = await synthesizeSpeech(firstMessage);
+
+    console.log("Initial audio URL:", audioUrl);
+
     twiml.play(audioUrl);
-
-    const gather = twiml.gather({
-      input: "speech",
-      action: "/gather",
-      method: "POST",
-      speechTimeout: "auto",
-      speechModel: "phone_call",
-      enhanced: true,
-      language: "en-US",
-      actionOnEmptyResult: true,
-    });
-
-    gather.pause({ length: 1 });
-    getSession(callSid);
+    buildGather(twiml);
 
     res.type("text/xml").send(twiml.toString());
   } catch (error) {
-    console.error(error);
-    twiml.say("Hello. I am calling to check in. How are you feeling today?");
-    twiml.redirect({ method: "POST" }, "/voice");
+    console.error("Error in /voice:", error);
+
+    twiml.say("Hello, this is CareRing checking in. Take your time. How are you feeling today?");
+    buildGather(twiml);
+
     res.type("text/xml").send(twiml.toString());
   }
 });
 
 app.post("/gather", async (req, res) => {
+  console.log("GATHER HIT");
+  console.log("Body:", req.body);
+
   if (!isRequestFromTwilio(req)) {
+    console.log("Twilio signature failed on /gather");
     return res.status(403).send("Invalid Twilio signature");
   }
 
   const twiml = new twilio.twiml.VoiceResponse();
-  const callSid = req.body.CallSid;
+  const callSid = req.body.CallSid || "unknown-call";
   const transcript = (req.body.SpeechResult || "").trim();
+
+  console.log("Transcript:", transcript);
 
   try {
     let reply;
@@ -278,52 +348,51 @@ app.post("/gather", async (req, res) => {
       reply = await generateReply(callSid, transcript);
     }
 
-    const audioUrl = await synthesizeSpeech(reply);
-    twiml.play(audioUrl);
+    console.log("AI reply:", reply);
 
-    const gather = twiml.gather({
-      input: "speech",
-      action: "/gather",
-      method: "POST",
-      speechTimeout: "auto",
-      speechModel: "phone_call",
-      enhanced: true,
-      language: "en-US",
-      actionOnEmptyResult: true,
-    });
+    let audioUrl;
+    try {
+      audioUrl = await synthesizeSpeech(reply);
+      console.log("Audio URL:", audioUrl);
+      twiml.play(audioUrl);
+    } catch (ttsError) {
+      console.error("TTS failed in /gather:", ttsError);
+      twiml.say(reply);
+    }
 
-    gather.pause({ length: 1 });
+    buildGather(twiml);
     res.type("text/xml").send(twiml.toString());
   } catch (error) {
-    console.error(error);
-    twiml.say("I’m sorry, I had a little trouble hearing that. Could you say it again?");
-    twiml.redirect({ method: "POST" }, "/gather");
+    console.error("Error in /gather:", error);
+
+    twiml.say("I'm sorry, something went wrong. Could you say that again?");
+    buildGather(twiml);
+
     res.type("text/xml").send(twiml.toString());
   }
 });
 
 app.post("/call-summary", (req, res) => {
+  console.log("CALL SUMMARY HIT");
+  console.log("Body:", req.body);
+
   if (!isRequestFromTwilio(req)) {
+    console.log("Twilio signature failed on /call-summary");
     return res.status(403).send("Invalid Twilio signature");
   }
 
   const callSid = req.body.CallSid;
-  const session = sessions.get(callSid);
-  if (!session) {
-    return res.json({ ok: true, summary: null });
-  }
+  const session = callSid ? sessions.get(callSid) : null;
 
   res.json({
     ok: true,
-    summary: session.summary,
-    transcript: session.history,
+    summary: session?.summary || null,
+    transcript: session?.history || [],
   });
-});
-
-app.get("/health", (_req, res) => {
-  res.json({ ok: true });
 });
 
 app.listen(PORT, () => {
   console.log(`CareRing voicebot running on port ${PORT}`);
+  console.log(`Base URL: ${BASE_URL}`);
+  console.log(`Mode: ${NODE_ENV}`);
 });
