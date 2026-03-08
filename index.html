@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CareRing</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #FAF7F2;
+  --navy: #1C2B3A;
+  --navy-light: #243447;
+  --amber: #E8943A;
+  --amber-light: #F5B56A;
+  --sage: #7BA68A;
+  --sage-light: #A8C4B0;
+  --sage-bg: #EEF5F1;
+  --red: #D95B5B;
+  --red-bg: #FDF0F0;
+  --gold: #C9964A;
+  --text-dark: #1C2B3A;
+  --text-mid: #5A6E7F;
+  --text-light: #96A8B4;
+  --border: #E4DDD4;
+  --white: #FFFFFF;
+  --shadow-sm: 0 2px 8px rgba(28,43,58,0.08);
+  --shadow-md: 0 8px 24px rgba(28,43,58,0.12);
+  --shadow-lg: 0 16px 48px rgba(28,43,58,0.18);
+  --radius: 20px;
+  --radius-sm: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  background: #E8E2D9;
+  font-family: 'Sora', sans-serif;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px;
+}
+.app-shell {
+  width: 390px; min-height: 844px;
+  background: var(--cream); border-radius: 48px;
+  box-shadow: var(--shadow-lg), 0 0 0 8px #D4CEC6, 0 0 0 10px #C8C2BA;
+  overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
+}
+.status-bar {
+  height: 44px; background: var(--navy);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.9); flex-shrink: 0;
+}
+.status-bar.sage-bar { background: var(--sage-bg); color: var(--navy); }
+.status-notch {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 34px; background: var(--navy);
+  border-radius: 0 0 20px 20px;
+}
+.status-bar.sage-bar .status-notch { background: var(--sage-bg); }
+.screen {
+  display: none; flex-direction: column; flex: 1;
+  overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+}
+.screen::-webkit-scrollbar { display: none; }
+.screen.active { display: flex; }
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(24px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(217,91,91,0.4); }
+  50%      { box-shadow: 0 0 0 12px rgba(217,91,91,0); }
+}
+@keyframes popIn {
+  0%   { transform: scale(0.85); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(232,148,58,0.5); }
+  70%  { box-shadow: 0 0 0 16px rgba(232,148,58,0); }
+  100% { box-shadow: 0 0 0 0 rgba(232,148,58,0); }
+}
+.anim { animation: slideUp 0.4s cubic-bezier(0.34,1.2,0.64,1) both; }
+.anim-d1 { animation-delay: 0.05s; }
+.anim-d2 { animation-delay: 0.1s; }
+.anim-d3 { animation-delay: 0.15s; }
+.anim-d4 { animation-delay: 0.2s; }
+
+/* ════ WELCOME ════ */
+#s-welcome { background: var(--navy); align-items: center; justify-content: center; padding: 48px 32px; }
+.welcome-logo {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, var(--amber), var(--amber-light));
+  border-radius: 28px; display: flex; align-items: center; justify-content: center;
+  font-size: 36px; margin-bottom: 28px;
+  box-shadow: 0 8px 32px rgba(232,148,58,0.4);
+  animation: slideUp 0.5s cubic-bezier(0.34,1.3,0.64,1) both;
+}
+.welcome-title {
+  font-family: 'Lora', serif; font-size: 38px; font-weight: 600;
+  color: #fff; margin-bottom: 10px; text-align: center;
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.1s both;
+}
+.welcome-sub {
+  font-size: 14px; color: rgba(255,255,255,0.5);
+  text-align: center; margin-bottom: 56px; line-height: 1.6;
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.15s both;
+}
+.welcome-question {
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.4);
+  letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 20px; animation: slideUp 0.5s 0.2s both;
+}
+.role-btn {
+  width: 100%; padding: 20px 24px; border-radius: var(--radius); border: none;
+  display: flex; align-items: center; gap: 16px;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  margin-bottom: 14px; text-align: left;
+}
+.role-btn:active { transform: scale(0.97); }
+.role-btn.elder {
+  background: linear-gradient(135deg, var(--sage) 0%, #5C9070 100%);
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.25s both;
+  box-shadow: 0 8px 24px rgba(123,166,138,0.35);
+}
+.role-btn.caretaker {
+  background: linear-gradient(135deg, var(--amber) 0%, #D4782A 100%);
+  animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.3s both;
+  box-shadow: 0 8px 24px rgba(232,148,58,0.35);
+}
+.role-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.25); }
+.role-icon {
+  width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 16px;
+  display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+}
+.role-text .role-name { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.role-text .role-desc { font-size: 12px; color: rgba(255,255,255,0.7); }
+.role-arrow { margin-left: auto; font-size: 18px; color: rgba(255,255,255,0.6); }
+
+/* ════ SHARED ════ */
+.page-header { padding: 24px 28px 20px; display: flex; align-items: center; gap: 14px; }
+.back-btn {
+  width: 40px; height: 40px; background: rgba(255,255,255,0.8);
+  border: 1.5px solid var(--border); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; color: var(--navy);
+  transition: background 0.15s; flex-shrink: 0;
+}
+.back-btn:hover { background: #fff; }
+.page-header-title { font-size: 18px; font-weight: 700; color: var(--navy); }
+.form-input {
+  padding: 14px 16px; background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-family: 'Sora', sans-serif;
+  font-size: 15px; color: var(--navy); outline: none; transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--amber); }
+.form-input.code-input {
+  font-family: 'Lora', serif; font-size: 22px; font-weight: 600;
+  letter-spacing: 6px; text-align: center; color: var(--navy);
+}
+.form-input::placeholder { color: var(--text-light); font-size: 14px; letter-spacing: normal; }
+.btn-primary {
+  width: 100%; padding: 17px;
+  background: linear-gradient(135deg, var(--amber), #D4782A);
+  border: none; border-radius: var(--radius); color: #fff;
+  font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 6px 20px rgba(232,148,58,0.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(232,148,58,0.4); }
+.btn-primary:active { transform: scale(0.98); }
+.save-btn {
+  width: 100%; padding: 16px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  border: none; border-radius: var(--radius); color: #fff;
+  font-family:'Sora',sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 6px 20px rgba(28,43,58,0.25); margin-top: 4px;
+}
+.save-btn:hover { transform: translateY(-1px); }
+.card {
+  background: var(--white); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow-sm); border: 1.5px solid var(--border); margin-bottom: 16px;
+}
+.section-label {
+  font-size: 11px; font-weight: 700; color: var(--text-light);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; margin-top: 4px;
+}
+.spacer { height: 16px; }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ════ ELDER CODE ════ */
+#s-elder-code { background: var(--sage-bg); padding: 0 0 40px; }
+.elder-hero {
+  margin: 0 24px 28px;
+  background: linear-gradient(135deg, var(--sage) 0%, #4A8060 100%);
+  border-radius: 28px; padding: 32px 28px;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 12px 32px rgba(123,166,138,0.3);
+}
+.elder-hero-icon { font-size: 48px; margin-bottom: 12px; }
+.elder-hero-title { font-family:'Lora',serif; font-size:22px; color:#fff; font-weight:600; margin-bottom:6px; }
+.elder-hero-sub { font-size:13px; color:rgba(255,255,255,0.75); text-align:center; line-height:1.5; }
+.code-card {
+  margin: 0 24px 20px; background: var(--white);
+  border-radius: var(--radius); padding: 28px 24px;
+  box-shadow: var(--shadow-sm); border: 1.5px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.code-label { font-size: 12px; font-weight: 600; color: var(--text-light); letter-spacing: 1.5px; text-transform: uppercase; }
+.code-display {
+  font-family: 'Lora', serif; font-size: 44px; font-weight: 600;
+  color: var(--navy); letter-spacing: 10px; padding: 16px 24px;
+  background: var(--sage-bg); border-radius: var(--radius-sm);
+  border: 2px dashed var(--sage-light); width: 100%; text-align: center;
+}
+.code-display.refreshing { animation: popIn 0.35s cubic-bezier(0.34,1.3,0.64,1); }
+.code-hint { font-size: 12px; color: var(--text-light); text-align: center; line-height: 1.5; }
+.btn-outline-sage {
+  width: calc(100% - 48px); margin: 0 24px; padding: 16px;
+  background: transparent; border: 2px solid var(--sage);
+  border-radius: var(--radius); color: var(--sage);
+  font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-outline-sage:hover { background: var(--sage); color: #fff; }
+.btn-outline-sage:active { transform: scale(0.97); }
+
+/* ════ CARETAKER CONNECT ════ */
+#s-care-connect { background: var(--cream); padding: 0 0 40px; }
+.connect-hero {
+  background: linear-gradient(160deg, var(--navy) 0%, var(--navy-light) 100%);
+  padding: 32px 28px 40px; margin-bottom: -20px;
+}
+.connect-hero-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(232,148,58,0.2); border: 1px solid rgba(232,148,58,0.3);
+  border-radius: 99px; padding: 5px 12px;
+  font-size: 11px; font-weight: 600; color: var(--amber-light);
+  letter-spacing: 0.5px; margin-bottom: 16px;
+}
+.connect-hero-title { font-family:'Lora',serif; font-size:26px; color:#fff; font-weight:600; margin-bottom:8px; }
+.connect-hero-sub { font-size:13px; color:rgba(255,255,255,0.55); line-height:1.6; }
+.form-card {
+  margin: 0 20px; background: var(--white); border-radius: var(--radius);
+  padding: 28px 22px; box-shadow: var(--shadow-md);
+  border: 1.5px solid var(--border);
+  display: flex; flex-direction: column; gap: 18px;
+  position: relative; z-index: 1;
+}
+.form-group { display: flex; flex-direction: column; gap: 7px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-mid); letter-spacing: 0.5px; }
+
+/* ════ CARETAKER HOME ════ */
+#s-care-home { background: var(--cream); flex-direction: column; }
+.home-header { background: var(--navy); padding: 20px 24px 28px; }
+.home-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.home-greeting { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 3px; }
+.home-name { font-family:'Lora',serif; font-size:22px; color:#fff; font-weight:600; }
+.avatar {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--amber), var(--amber-light));
+  border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.elder-card-mini {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.elder-mini-avatar {
+  width: 36px; height: 36px; background: linear-gradient(135deg, var(--sage), #4A8060);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.elder-mini-name { font-size: 14px; font-weight: 600; color: #fff; }
+.elder-mini-status { font-size: 11px; color: rgba(255,255,255,0.5); }
+.status-dot-sm { width: 6px; height: 6px; background: var(--sage-light); border-radius: 50%; display: inline-block; margin-right: 4px; }
+.tab-bar {
+  display: flex; background: var(--white);
+  border-top: 1.5px solid var(--border); padding: 8px 0 20px; flex-shrink: 0;
+}
+.tab-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; padding: 6px 0; transition: all 0.15s;
+}
+.tab-icon { font-size: 22px; transition: transform 0.2s; }
+.tab-label { font-size: 10px; font-weight: 600; color: var(--text-light); letter-spacing: 0.3px; }
+.tab-item.active .tab-label { color: var(--amber); }
+.tab-item.active .tab-icon { transform: translateY(-2px); }
+.tab-panel { display: none; flex: 1; overflow-y: auto; padding: 20px 20px 0; }
+.tab-panel::-webkit-scrollbar { display: none; }
+.tab-panel.active { display: block; }
+
+/* Schedule UI */
+.count-selector { display: flex; gap: 10px; }
+.count-btn {
+  flex: 1; padding: 11px 0; background: var(--cream);
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  text-align: center; font-size: 15px; font-weight: 700; color: var(--text-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.count-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.time-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.time-pill {
+  padding: 8px 14px; background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 99px; font-size: 13px; font-weight: 600; color: var(--text-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.time-pill.active { background: var(--amber); border-color: var(--amber); color: #fff; }
+.days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.day-btn {
+  aspect-ratio: 1; border-radius: 10px; background: var(--cream);
+  border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.day-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+.toggle-label { font-size: 14px; color: var(--navy); font-weight: 500; }
+.toggle-wrap {
+  width: 48px; height: 26px; background: var(--sage); border-radius: 99px;
+  position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+}
+.toggle-wrap.off { background: var(--border); }
+.toggle-knob {
+  position: absolute; top: 3px; right: 3px;
+  width: 20px; height: 20px; background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15); transition: all 0.2s;
+}
+.toggle-wrap.off .toggle-knob { right: auto; left: 3px; }
+.clock-wrap {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); overflow: hidden; position: relative; height: 140px;
+}
+.clock-wrap::before, .clock-wrap::after {
+  content:''; position: absolute; left:0; right:0; height:40px; z-index:2; pointer-events:none;
+}
+.clock-wrap::before { top:0; background: linear-gradient(to bottom, var(--cream), transparent); }
+.clock-wrap::after  { bottom:0; background: linear-gradient(to top, var(--cream), transparent); }
+.clock-highlight-line {
+  position: absolute; top:50%; left:12px; right:12px; height: 40px; transform: translateY(-50%);
+  background: var(--white); border-radius: 10px; border: 1.5px solid var(--border); z-index:1;
+}
+.clock-scroller {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 50px 0; overflow-y: scroll; height: 100%; scrollbar-width: none;
+}
+.clock-scroller::-webkit-scrollbar { display: none; }
+.clock-item {
+  height: 40px; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 500; color: var(--text-light);
+  z-index: 3; position: relative; width: 100%; transition: all 0.2s;
+}
+.clock-item.active { color: var(--navy); font-weight: 700; font-size: 17px; }
+
+/* Summary */
+.alert-card {
+  background: var(--red-bg); border: 2px solid var(--red);
+  border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px;
+  animation: pulse 2s infinite;
+}
+.alert-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.alert-icon { font-size: 22px; }
+.alert-title { font-size: 16px; font-weight: 700; color: var(--red); }
+.alert-body { font-size: 13px; color: #A04040; line-height: 1.5; margin-bottom: 14px; }
+.call-now-btn {
+  width: 100%; padding: 13px; background: var(--red); border: none;
+  border-radius: var(--radius-sm); color: #fff; font-family:'Sora',sans-serif;
+  font-size:14px; font-weight:700; cursor: pointer; transition: opacity 0.15s;
+}
+.call-now-btn:hover { opacity: 0.9; }
+.day-nav {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+}
+.day-nav-arrow {
+  width: 34px; height: 34px; background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--text-mid); transition: all 0.15s;
+}
+.day-nav-arrow:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+.day-nav-arrow.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+.day-nav-center { text-align: center; }
+.day-nav-date { font-size: 15px; font-weight: 700; color: var(--navy); }
+.day-nav-status { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.day-nav-status.ok { color: var(--sage); }
+.day-nav-status.err { color: var(--red); }
+.summary-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.summary-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+}
+.summary-item-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.summary-item-text { font-size: 13px; color: var(--navy); line-height: 1.4; }
+.summary-item.warn { border-color: #F5C06A; background: #FFFBF0; }
+.summary-item.warn .summary-item-text { color: #8A6520; }
+.follow-up-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #FFF3E0; border: 1.5px solid #F5C06A;
+  border-radius: 99px; padding: 7px 14px;
+  font-size: 12px; font-weight: 600; color: #8A6520;
+}
+#summary-state-b { display: none; }
+
+/* ════ ELDER HOME ════ */
+#s-elder-home { background: linear-gradient(180deg, var(--sage-bg) 0%, var(--cream) 40%); }
+.elder-tab-panel { display: none; flex: 1; overflow-y: auto; padding: 16px 20px 0; }
+.elder-tab-panel::-webkit-scrollbar { display: none; }
+.elder-tab-panel.active { display: block; }
+.call-history-item {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 10px; box-shadow: var(--shadow-sm);
+}
+.call-history-icon {
+  width: 44px; height: 44px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.call-history-icon.ok { background: #E8F5EE; }
+.call-history-icon.miss { background: var(--red-bg); }
+.call-history-title { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 2px; }
+.call-history-time { font-size: 12px; color: var(--text-light); }
+.call-history-badge { margin-left: auto; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+.call-history-badge.ok { background: #E8F5EE; color: var(--sage); }
+.call-history-badge.miss { background: var(--red-bg); color: var(--red); }
+
+/* ── AI CALL SCREEN ── */
+.topic-chip {
+  padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 700;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.6);
+}
+.topic-chip.covered { background: rgba(123,166,138,0.25); border-color: rgba(123,166,138,0.4); color: var(--sage-light); text-decoration: line-through; }
+.ai-speaking { animation: pulse-ring 1.2s infinite; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ════ WELCOME ════ -->
+  <div id="s-welcome" class="screen active">
+    <div class="status-bar" style="background:var(--navy);">
+      <span>9:41</span>
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:var(--navy);border-radius:0 0 20px 20px;"></div>
+      <span>●●● 100%</span>
+    </div>
+    <div style="flex:1;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 32px;">
+      <div class="welcome-logo">📞</div>
+      <div class="welcome-title">CareRing</div>
+      <div class="welcome-sub">Bridging the gap between<br>AI and human connection</div>
+      <div class="welcome-question">Who are you?</div>
+      <button class="role-btn elder" onclick="goTo('s-elder-code')">
+        <div class="role-icon">🧓</div>
+        <div class="role-text"><div class="role-name">I'm an Elder</div><div class="role-desc">Get your unique connection code</div></div>
+        <div class="role-arrow">›</div>
+      </button>
+      <button class="role-btn caretaker" onclick="goTo('s-care-connect')">
+        <div class="role-icon">💙</div>
+        <div class="role-text"><div class="role-name">I'm a Caretaker</div><div class="role-desc">Set up care for your loved one</div></div>
+        <div class="role-arrow">›</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ════ ELDER CODE ════ -->
+  <div id="s-elder-code" class="screen">
+    <div class="status-bar sage-bar">
+      <span>9:41</span>
+      <div class="status-notch" style="background:var(--sage-bg);"></div>
+      <span style="color:var(--navy);">●●● 100%</span>
+    </div>
+    <div class="page-header anim">
+      <div class="back-btn" onclick="goTo('s-welcome')">‹</div>
+      <div class="page-header-title">Your Code</div>
+    </div>
+    <div class="elder-hero anim anim-d1">
+      <div class="elder-hero-icon">🔑</div>
+      <div class="elder-hero-title">Your Unique Code</div>
+      <div class="elder-hero-sub">Share this with your family caretaker<br>so they can connect to you</div>
+    </div>
+    <div style="margin: 0 24px 16px;" class="anim anim-d1">
+      <div style="font-size:12px;font-weight:600;color:var(--text-mid);letter-spacing:0.5px;margin-bottom:7px;">Your name (so caretaker knows it's you)</div>
+      <input id="elder-name-input" class="form-input" type="text" placeholder="e.g. Margaret" style="width:100%;" oninput="onElderNameChange()">
+    </div>
+    <div style="margin: 0 24px 16px;" class="anim anim-d1">
+      <div style="font-size:12px;font-weight:600;color:var(--text-mid);letter-spacing:0.5px;margin-bottom:7px;">Your phone number (for AI check-in calls)</div>
+      <input id="elder-phone-input" class="form-input" type="tel" placeholder="+1 555 000 0000" style="width:100%;">
+    </div>
+    <div class="code-card anim anim-d2">
+      <div class="code-label">Your Code</div>
+      <div class="code-display" id="elder-code-display">· · · · ·</div>
+      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-top:4px;" id="code-expiry-hint"></div>
+      <div class="code-hint">Show this to your caretaker or read it to them over the phone</div>
+      <div id="elder-connection-badge" style="display:none;width:100%;padding:10px 16px;background:rgba(123,166,138,0.15);border:1.5px solid var(--sage-light);border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:var(--sage);text-align:center;align-items:center;justify-content:center;gap:6px;"></div>
+    </div>
+    <button class="btn-outline-sage anim anim-d3" onclick="generateNewCode()">🔄 &nbsp;Generate New Code</button>
+  </div>
+
+  <!-- ════ CARETAKER CONNECT ════ -->
+  <div id="s-care-connect" class="screen">
+    <div class="status-bar" style="background:var(--navy);">
+      <span>9:41</span>
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:var(--navy);border-radius:0 0 20px 20px;"></div>
+      <span>●●● 100%</span>
+    </div>
+    <div class="connect-hero">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div class="back-btn" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);color:#fff;" onclick="goTo('s-welcome')">‹</div>
+        <div class="connect-hero-tag">🔗 Connect</div>
+      </div>
+      <div class="connect-hero-title">Link Your Elder</div>
+      <div class="connect-hero-sub">Enter the code shown on your elder's phone to connect your accounts.</div>
+    </div>
+    <div class="form-card anim">
+      <div class="form-group">
+        <div class="form-label">Your Name</div>
+        <input id="ct-name-input" class="form-input" type="text" placeholder="e.g. Sarah">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Elder's Code</div>
+        <input id="ct-code-input" class="form-input code-input" type="text" placeholder="· · · · ·" maxlength="5" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')connectWithCode()">
+      </div>
+      <div id="ct-error" style="display:none;font-size:13px;color:var(--red);font-weight:600;padding:10px 14px;background:var(--red-bg);border-radius:var(--radius-sm);border:1.5px solid var(--red);"></div>
+      <button id="ct-connect-btn" class="btn-primary" onclick="connectWithCode()">Connect &amp; Continue →</button>
+    </div>
+  </div>
+
+  <!-- ════ CARETAKER HOME ════ -->
+  <div id="s-care-home" class="screen">
+    <div class="status-bar">
+      <span>9:41</span>
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:var(--navy);border-radius:0 0 20px 20px;"></div>
+      <span>●●● 100%</span>
+    </div>
+    <div class="home-header">
+      <div class="home-header-top">
+        <div>
+          <div class="home-greeting" id="care-date-line">Good morning,</div>
+          <div class="home-name" id="care-home-name">Sarah 👋</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:2px;" id="care-date-display"></div>
+          <div class="avatar">👤</div>
+        </div>
+      </div>
+      <div class="elder-card-mini">
+        <div class="elder-mini-avatar">🧓</div>
+        <div>
+          <div class="elder-mini-name" id="care-elder-name">Margaret</div>
+          <div class="elder-mini-status"><span class="status-dot-sm"></span>Connected · Code: <span id="care-linked-code">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+
+      <!-- TAB 1: Schedule -->
+      <div id="tab-ai" class="tab-panel active">
+        <div class="section-label">Calls Per Day</div>
+        <div class="card">
+          <div class="count-selector">
+            <div class="count-btn" onclick="setCount(this,1)">1×</div>
+            <div class="count-btn active" onclick="setCount(this,2)">2×</div>
+            <div class="count-btn" onclick="setCount(this,3)">3×</div>
+          </div>
+          <div style="margin-top:14px;">
+            <div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">Set call times (tap to edit):</div>
+            <div class="time-pills" id="time-pill-list">
+              <div class="time-pill active editable-time" onclick="openTimePicker(this,0)">9:00 AM ✎</div>
+              <div class="time-pill active editable-time" onclick="openTimePicker(this,1)">4:00 PM ✎</div>
+              <div class="time-pill editable-time" style="display:none;" onclick="openTimePicker(this,2)">8:00 PM ✎</div>
+            </div>
+          </div>
+          <!-- Time picker modal -->
+          <div id="time-picker-modal" style="display:none;position:absolute;left:16px;right:16px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:100;padding:18px;top:50%;transform:translateY(-50%);">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px;">Set Call Time</div>
+            <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:16px;">
+              <select id="tp-hour" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy);background:var(--cream);outline:none;text-align:center;">
+                <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option selected>9</option><option>10</option><option>11</option><option>12</option>
+              </select>
+              <span style="font-size:22px;font-weight:700;color:var(--navy);">:</span>
+              <select id="tp-min" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy);background:var(--cream);outline:none;text-align:center;">
+                <option selected>00</option><option>15</option><option>30</option><option>45</option>
+              </select>
+              <select id="tp-ampm" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy);background:var(--cream);outline:none;text-align:center;">
+                <option selected>AM</option><option>PM</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="cancelTimePicker()" style="flex:1;padding:11px;background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--text-mid);cursor:pointer;">Cancel</button>
+              <button onclick="confirmTimePicker()" style="flex:2;padding:11px;background:linear-gradient(135deg,var(--amber),#D4782A);border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">Set Time</button>
+            </div>
+          </div>
+        </div>
+        <button class="save-btn anim anim-d4" onclick="saveSchedule()">Save Schedule ✓</button>
+        <div id="schedule-saved-banner" style="display:none;margin-top:10px;padding:10px 16px;background:#E8F5EE;border:1.5px solid var(--sage-light);border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:var(--sage);text-align:center;">✅ Schedule saved — elder will see call times</div>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- TAB 2: My Calls -->
+      <div id="tab-calls" class="tab-panel">
+        <div class="section-label">Remind Me On</div>
+        <div class="card">
+          <div class="days-grid">
+            <div class="day-btn active" onclick="toggleDay(this)">M</div>
+            <div class="day-btn active" onclick="toggleDay(this)">T</div>
+            <div class="day-btn" onclick="toggleDay(this)">W</div>
+            <div class="day-btn active" onclick="toggleDay(this)">T</div>
+            <div class="day-btn active" onclick="toggleDay(this)">F</div>
+            <div class="day-btn" onclick="toggleDay(this)">S</div>
+            <div class="day-btn" onclick="toggleDay(this)">S</div>
+          </div>
+        </div>
+        <div class="section-label">Remind Me At</div>
+        <div class="card">
+          <div class="clock-wrap">
+            <div class="clock-highlight-line"></div>
+            <div class="clock-scroller">
+              <div class="clock-item">5:00 PM</div><div class="clock-item">5:30 PM</div>
+              <div class="clock-item">6:00 PM</div><div class="clock-item">6:30 PM</div>
+              <div class="clock-item active">7:00 PM</div>
+              <div class="clock-item">7:30 PM</div><div class="clock-item">8:00 PM</div>
+              <div class="clock-item">8:30 PM</div><div class="clock-item">9:00 PM</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="toggle-row">
+            <div class="toggle-label">Enable reminder</div>
+            <div class="toggle-wrap" onclick="toggleSwitch(this)"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+        <button class="save-btn" onclick="showSaved()">Save Reminder ✓</button>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- TAB 3: Summary -->
+      <div id="tab-summary" class="tab-panel">
+        <div id="summary-state-a">
+          <div class="day-nav" style="margin-bottom:12px;">
+            <div class="day-nav-arrow disabled">‹</div>
+            <div class="day-nav-center">
+              <div class="day-nav-date" id="summary-date-a">Today — Mar 8</div>
+              <div class="day-nav-status ok">Call completed ✓</div>
+            </div>
+          <div class="day-nav-arrow disabled">›</div>
+        </div>
+        <div class="summary-items">
+          <div class="summary-item">
+            <span class="summary-item-icon">🐟</span>
+            <span class="summary-item-text">Had fish and chips today</span>
+          </div>
+          <div class="summary-item warn">
+            <span class="summary-item-icon">💧</span>
+            <span class="summary-item-text">Hasn't had a drink yet today — remind her to stay hydrated</span>
+          </div>
+        </div>
+        <div class="follow-up-pill">🟡 &nbsp;Follow up: encourage fluids</div>
+      </div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item active" id="care-tab-ai" onclick="switchCareTab('ai')">
+        <div class="tab-icon">📅</div><div class="tab-label">Schedule</div>
+      </div>
+      <div class="tab-item" id="care-tab-calls" onclick="switchCareTab('calls')">
+        <div class="tab-icon">📞</div><div class="tab-label">My Calls</div>
+      </div>
+      <div class="tab-item" id="care-tab-summary" onclick="switchCareTab('summary')">
+        <div class="tab-icon">📋</div><div class="tab-label">Summary</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ELDER HOME ════ -->
+  <div id="s-elder-home" class="screen">
+    <div class="status-bar sage-bar">
+      <span id="elder-time-display">9:41</span>
+      <div class="status-notch" style="background:var(--sage-bg);"></div>
+      <span style="color:var(--navy);">●●● 100%</span>
+    </div>
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--sage-bg);">
+
+      <div id="elder-tab-home" class="elder-tab-panel active" style="background:var(--sage-bg);padding:24px 20px 0;">
+        <div style="margin-bottom:20px;">
+          <div style="font-size:15px;color:var(--text-mid);margin-bottom:4px;" id="elder-greeting-text">Good morning,</div>
+          <div style="font-family:'Lora',serif;font-size:32px;font-weight:600;color:var(--navy);line-height:1.2;" id="elder-name-display">Margaret 🌸</div>
+          <div style="font-size:13px;color:var(--text-light);margin-top:4px;" id="elder-date-display"></div>
+        </div>
+
+        <!-- Schedule card — hidden if no schedule set -->
+        <div id="elder-schedule-card" style="display:none;background:linear-gradient(135deg,var(--sage) 0%,#4A8060 100%);border-radius:24px;padding:24px;margin-bottom:20px;box-shadow:0 8px 24px rgba(123,166,138,0.35);" class="anim anim-d1">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="font-size:48px;line-height:1;">📅</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px;">Your AI Check-in Schedule</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.75);">Set by your caretaker</div>
+            </div>
+          </div>
+          <div id="elder-schedule-times" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- No schedule message — shown if no schedule set -->
+        <div id="elder-no-schedule" style="background:var(--white);border-radius:20px;padding:24px;text-align:center;border:1.5px solid var(--border);box-shadow:var(--shadow-sm);margin-bottom:20px;" class="anim anim-d1">
+          <div style="font-size:36px;margin-bottom:10px;">⏳</div>
+          <div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px;">No schedule yet</div>
+          <div style="font-size:14px;color:var(--text-mid);line-height:1.7;">Your caretaker hasn't set up<br>AI call times yet.</div>
+        </div>
+
+        <div style="background:var(--white);border-radius:20px;padding:24px;text-align:center;border:1.5px solid var(--border);box-shadow:var(--shadow-sm);" class="anim anim-d2">
+          <div style="font-size:40px;margin-bottom:10px;">☀️</div>
+          <div style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px;">You're all good!</div>
+          <div style="font-size:15px;color:var(--text-mid);line-height:1.7;" id="elder-caretaker-msg">Your caretaker has been notified of your check-in.</div>
+        </div>
+
+        <button onclick="goTo('s-ai-call')" class="anim anim-d3" style="width:100%;margin-top:16px;padding:20px;background:linear-gradient(135deg,var(--amber),#D4782A);border:none;border-radius:24px;color:#fff;font-family:'Sora',sans-serif;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(232,148,58,0.35);display:flex;align-items:center;justify-content:center;gap:10px;">
+          <span style="font-size:28px;">🤖</span> Start AI Check-in Call
+        </button>
+        <div class="spacer"></div>
+      </div>
+
+      <div id="elder-tab-calls" class="elder-tab-panel" style="background:var(--sage-bg);padding:24px 20px 0;">
+        <div style="font-size:13px;font-weight:700;color:var(--text-light);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;">Recent Calls</div>
+        <div class="call-history-item anim" style="padding:20px 18px;">
+          <div class="call-history-icon ok" style="width:52px;height:52px;font-size:24px;border-radius:16px;">✅</div>
+          <div style="flex:1;"><div class="call-history-title" style="font-size:16px;">Today — AI Check-in</div><div class="call-history-time" style="font-size:14px;margin-top:3px;">9:04 AM · 3 min</div></div>
+          <div class="call-history-badge ok" style="font-size:13px;padding:6px 14px;">Done</div>
+        </div>
+        <div class="call-history-item anim anim-d1" style="padding:20px 18px;">
+          <div class="call-history-icon ok" style="width:52px;height:52px;font-size:24px;border-radius:16px;">📞</div>
+          <div style="flex:1;"><div class="call-history-title" style="font-size:16px;">Yesterday — Caretaker called</div><div class="call-history-time" style="font-size:14px;margin-top:3px;">7:12 PM · 8 min</div></div>
+          <div class="call-history-badge ok" style="font-size:13px;padding:6px 14px;">Done</div>
+        </div>
+        <div class="call-history-item anim anim-d2" style="padding:20px 18px;">
+          <div class="call-history-icon miss" style="width:52px;height:52px;font-size:24px;border-radius:16px;">❌</div>
+          <div style="flex:1;"><div class="call-history-title" style="font-size:16px;">Mar 5 — AI Check-in</div><div class="call-history-time" style="font-size:14px;margin-top:3px;">9:00 AM · Missed</div></div>
+          <div class="call-history-badge miss" style="font-size:13px;padding:6px 14px;">Missed</div>
+        </div>
+        <div class="spacer"></div>
+      </div>
+
+      <div id="elder-tab-help" class="elder-tab-panel" style="background:var(--sage-bg);padding:24px 20px 0;">
+        <div style="font-size:13px;font-weight:700;color:var(--text-light);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;">Need Help?</div>
+        <button onclick="triggerSOS()" style="width:100%;padding:32px 20px;background:linear-gradient(135deg,var(--red),#C04040);border:none;border-radius:24px;color:#fff;font-family:'Sora',sans-serif;font-size:26px;font-weight:700;cursor:pointer;box-shadow:0 10px 30px rgba(217,91,91,0.45);margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:10px;" class="anim">
+          <span style="font-size:52px;">🆘</span>Alert My Family
+        </button>
+        <div style="font-size:14px;color:var(--text-light);text-align:center;margin-bottom:20px;line-height:1.7;">Tapping this sends an immediate<br>alert to <strong style="color:var(--navy);" id="elder-sos-caretaker">your caretaker</strong>'s phone.</div>
+        <button style="width:100%;padding:24px 20px;background:var(--white);border:2.5px solid var(--sage);border-radius:24px;color:var(--sage);font-family:'Sora',sans-serif;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:var(--shadow-sm);" class="anim anim-d1">
+          <span style="font-size:32px;">📞</span> Call <span id="elder-call-caretaker" style="margin-left:4px;">Caretaker</span>
+        </button>
+        <div class="spacer"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;background:var(--white);border-top:1.5px solid var(--border);padding:10px 0 22px;flex-shrink:0;">
+      <div class="elder-tab-item active" id="et-home" onclick="switchElderTab('home')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 0;">
+        <div style="font-size:28px;" class="et-icon">🏠</div>
+        <div style="font-size:13px;font-weight:700;color:var(--sage);" class="et-lbl">Home</div>
+      </div>
+      <div class="elder-tab-item" id="et-calls" onclick="switchElderTab('calls')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 0;">
+        <div style="font-size:28px;" class="et-icon">📞</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text-light);" class="et-lbl">Calls</div>
+      </div>
+      <div class="elder-tab-item" id="et-help" onclick="switchElderTab('help')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 0;">
+        <div style="font-size:28px;" class="et-icon">🆘</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text-light);" class="et-lbl">Help</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ AI CALL SCREEN ════ -->
+  <div id="s-ai-call" class="screen" style="background:var(--navy);flex-direction:column;">
+    <div class="status-bar">
+      <span id="ai-call-time">9:41</span>
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:var(--navy);border-radius:0 0 20px 20px;"></div>
+      <span>●●● 100%</span>
+    </div>
+
+    <!-- Back button row -->
+    <div style="padding:20px 24px 0;display:flex;align-items:center;gap:14px;flex-shrink:0;">
+      <div onclick="endCall()" style="width:40px;height:40px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#fff;">‹</div>
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">AI Check-in Call</div>
+        <div style="font-family:'Lora',serif;font-size:18px;color:#fff;font-weight:600;">CareRing Assistant</div>
+      </div>
+    </div>
+
+    <!-- Main content — centred -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;gap:24px;">
+
+      <!-- Pulsing robot avatar -->
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+        <div id="call-pulse-ring"  style="position:absolute;width:148px;height:148px;border-radius:50%;border:2px solid rgba(123,166,138,0.35);opacity:0;transition:none;"></div>
+        <div id="call-pulse-ring2" style="position:absolute;width:120px;height:120px;border-radius:50%;border:2px solid rgba(123,166,138,0.25);opacity:0;transition:none;"></div>
+        <div style="width:96px;height:96px;background:linear-gradient(135deg,var(--sage),#4A8060);border-radius:32px;display:flex;align-items:center;justify-content:center;font-size:48px;box-shadow:0 8px 32px rgba(123,166,138,0.45);z-index:1;">🤖</div>
+      </div>
+
+      <!-- Instruction -->
+      <div style="text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:10px;">Call CareRing AI</div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.7;max-width:260px;margin:0 auto;">
+          Dial the number below from your phone.<br>The AI will pick up and begin your check-in.
+        </div>
+      </div>
+
+      <!-- Outbound call button -->
+      <button id="call-trigger-btn"
+        onclick="triggerOutboundCall()"
+        style="width:100%;padding:22px 24px;background:linear-gradient(135deg,var(--sage),#4A8060);
+               border:none;border-radius:20px;color:#fff;font-family:'Sora',sans-serif;
+               font-size:18px;font-weight:700;cursor:pointer;
+               box-shadow:0 8px 24px rgba(123,166,138,0.4);">
+        📞 Call My Phone Now
+      </button>
+      <div id="call-status-msg"
+        style="display:none;font-size:13px;color:rgba(255,255,255,0.6);
+               text-align:center;margin-top:8px;line-height:1.6;"></div>
+
+      <!-- Topics that will be covered -->
+      <div style="width:100%;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px 18px;">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px;">Topics in this check-in</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <div class="topic-chip">💊 Medication</div>
+          <div class="topic-chip">☀️ Your day</div>
+          <div class="topic-chip">🚶 Activities</div>
+          <div class="topic-chip">🆘 Any help needed</div>
+          <div class="topic-chip">😴 Sleep</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom back button -->
+    <div style="padding:0 24px 32px;flex-shrink:0;">
+      <button onclick="endCall()" style="width:100%;padding:16px;background:transparent;border:1.5px solid rgba(255,255,255,0.15);border-radius:20px;color:rgba(255,255,255,0.45);font-family:'Sora',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">
+        ← Go back
+      </button>
+    </div>
+  </div>
+
+</div><!-- end app-shell -->
+
+<script>
+// ══════════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════════
+const SERVER_URL = 'https://costoscapular-interrenal-jeanette.ngrok-free.dev';
+
+const TOPIC_DEFS = [
+  { id: 'medication', emoji: '💊', label: 'Medication check',  prompt: 'Ask whether they have taken their medication today.' },
+  { id: 'day',        emoji: '☀️', label: "How's your day",    prompt: 'Ask how their day is going and how they are feeling emotionally.' },
+  { id: 'activity',   emoji: '🚶', label: 'What did you do',   prompt: 'Ask what activities or things they did today.' },
+  { id: 'help',       emoji: '🆘', label: 'Need any help',      prompt: 'Ask if they need any help or have any concerns.' },
+  { id: 'sleep',      emoji: '😴', label: 'How did you sleep',  prompt: 'Ask how well they slept last night.' },
+];
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let connectedElderCode = null;
+let currentElderCode = null;
+let connectedElderName = null;
+let connectedCaretakerName = null;
+
+// ══════════════════════════════════════════════
+//  SCHEDULE — save & load
+// ══════════════════════════════════════════════
+async function saveSchedule() {
+  // Collect visible active time pills
+  const times = [];
+  document.querySelectorAll('.editable-time').forEach(pill => {
+    if (pill.style.display !== 'none') {
+      times.push(pill.textContent.replace(' ✎', '').trim());
+    }
+  });
+
+  const payload = JSON.stringify({ times, savedAt: Date.now() });
+  const storageKey = connectedElderCode ? `schedule:${connectedElderCode}` : 'schedule:default';
+
+  try {
+    await window.storage.set(storageKey, payload, true);
+  } catch(e) {
+    window._sessionSchedule = payload;
+  }
+
+  const banner = document.getElementById('schedule-saved-banner');
+  if (banner) { banner.style.display = 'block'; setTimeout(() => banner.style.display = 'none', 3000); }
+}
+
+async function loadSchedule() {
+  const storageKey = connectedElderCode ? `schedule:${connectedElderCode}` : 'schedule:default';
+  try {
+    const result = await window.storage.get(storageKey, true);
+    if (result) return JSON.parse(result.value).times;
+  } catch(e) {}
+  if (window._sessionSchedule) return JSON.parse(window._sessionSchedule).times;
+  return null; // null = no schedule set yet
+}
+
+async function refreshElderScheduleCard() {
+  const times = await loadSchedule();
+  const card = document.getElementById('elder-schedule-card');
+  const noSchedule = document.getElementById('elder-no-schedule');
+  const timesEl = document.getElementById('elder-schedule-times');
+
+  if (!times || times.length === 0) {
+    card.style.display = 'none';
+    noSchedule.style.display = 'block';
+    return;
+  }
+
+  // Show schedule card, hide placeholder
+  card.style.display = 'block';
+  noSchedule.style.display = 'none';
+
+  // Render time rows
+  timesEl.innerHTML = '';
+  times.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'background:rgba(255,255,255,0.15);border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;';
+    row.innerHTML = `
+      <div style="font-size:14px;color:rgba(255,255,255,0.8);">Call ${i + 1}</div>
+      <div style="font-size:20px;font-weight:700;color:#fff;">${t}</div>
+    `;
+    timesEl.appendChild(row);
+  });
+
+  // Also update the elder name display
+  const nameInput = document.getElementById('elder-name-input');
+  const name = nameInput?.value.trim();
+  if (name) {
+    document.getElementById('elder-name-display').textContent = name + ' 🌸';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  AI CALL SCREEN — inbound dial-in
+//  Elder calls the Twilio number; server handles everything.
+//  This screen just shows them the number to dial.
+// ══════════════════════════════════════════════
+
+// Set this to your Twilio phone number
+const TWILIO_PHONE_NUMBER = '+441923311452'; // ← update this
+
+let activePulseInterval = null;
+
+async function initAiCall() {
+  setCallState('idle');
+  startPulse();
+}
+
+function endCall() {
+  stopPulse();
+  setCallState('idle');
+  goTo('s-elder-home');
+}
+
+async function triggerOutboundCall() {
+  const phoneNumber = document.getElementById('elder-phone-input')?.value.trim();
+  const elderName   = document.getElementById('elder-name-input')?.value.trim() || 'there';
+
+  if (!phoneNumber) {
+    alert('Please enter your phone number on the Elder setup screen first.');
+    return;
+  }
+
+  setCallState('calling');
+
+  try {
+    const resp = await fetch(`${SERVER_URL}/call-elder`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ phoneNumber, elderName }),
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      setCallState('ringing');
+    } else {
+      setCallState('error', data.error || 'Something went wrong.');
+    }
+  } catch (err) {
+    setCallState('error', 'Could not reach the server. Is ngrok running?');
+  }
+}
+
+function setCallState(state, errorMsg) {
+  const btn      = document.getElementById('call-trigger-btn');
+  const statusEl = document.getElementById('call-status-msg');
+  if (!btn || !statusEl) return;
+
+  const states = {
+    idle:    { label: '📞 Call My Phone Now',         bg: 'linear-gradient(135deg,var(--sage),#4A8060)',  disabled: false, msg: '' },
+    calling: { label: '⏳ Dialling…',                 bg: 'rgba(255,255,255,0.15)',                       disabled: true,  msg: 'Connecting to CareRing…' },
+    ringing: { label: '📲 Your phone is ringing!',    bg: 'linear-gradient(135deg,var(--amber),#D4782A)', disabled: true,  msg: 'Pick up your phone to start the check-in.' },
+    error:   { label: '⚠️ Try Again',                 bg: 'rgba(217,91,91,0.8)',                          disabled: false, msg: errorMsg || 'Error.' },
+  };
+
+  const s = states[state] || states.idle;
+  btn.textContent        = s.label;
+  btn.style.background   = s.bg;
+  btn.disabled           = s.disabled;
+  statusEl.textContent   = s.msg;
+  statusEl.style.display = s.msg ? 'block' : 'none';
+}
+
+// Slow ambient pulse (not urgent — just decorative)
+function startPulse() {
+  stopPulse();
+  const r1 = document.getElementById('call-pulse-ring');
+  const r2 = document.getElementById('call-pulse-ring2');
+  let tick = 0;
+  activePulseInterval = setInterval(() => {
+    tick = (tick + 1) % 100;
+    const p = tick / 100; // 0 → 1
+    const scale1 = 1 + p * 0.18;
+    const scale2 = 1 + p * 0.10;
+    const op1 = p < 0.5 ? p * 0.8 : (1 - p) * 0.8;
+    const op2 = p < 0.5 ? p * 0.5 : (1 - p) * 0.5;
+    r1.style.transform = `scale(${scale1})`;
+    r1.style.opacity   = op1;
+    r2.style.transform = `scale(${scale2})`;
+    r2.style.opacity   = op2;
+  }, 20);
+}
+
+function stopPulse() {
+  if (activePulseInterval) { clearInterval(activePulseInterval); activePulseInterval = null; }
+  ['call-pulse-ring','call-pulse-ring2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.opacity = '0'; el.style.transform = 'scale(1)'; }
+  });
+}
+
+// ══════════════════════════════════════════════
+//  CONNECTION SYSTEM
+// ══════════════════════════════════════════════
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function generateCode() {
+  let c = '';
+  for (let i = 0; i < 5; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  return c;
+}
+
+async function generateNewCode() {
+  if (currentElderCode) {
+    try { await window.storage.delete('code:' + currentElderCode, true); } catch(e) {}
+  }
+  const newCode = generateCode();
+  currentElderCode = newCode;
+  const elderName = document.getElementById('elder-name-input')?.value.trim() || 'Elder';
+  try {
+    await window.storage.set('code:' + newCode, JSON.stringify({
+      elderName, createdAt: Date.now(), expiresAt: Date.now() + 10 * 60 * 1000
+    }), true);
+  } catch(e) { console.warn('Storage unavailable:', e); }
+
+  const display = document.getElementById('elder-code-display');
+  display.classList.remove('refreshing');
+  void display.offsetWidth;
+  display.textContent = newCode;
+  display.classList.add('refreshing');
+  startCodeExpiry(newCode);
+  startPolling(newCode);
+}
+
+let expiryInterval = null;
+function startCodeExpiry(code) {
+  if (expiryInterval) clearInterval(expiryInterval);
+  const hint = document.getElementById('code-expiry-hint');
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  function tick() {
+    const remaining = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
+    const m = Math.floor(remaining / 60);
+    const s = String(remaining % 60).padStart(2, '0');
+    if (hint) hint.textContent = remaining > 0 ? `⏱ Expires in ${m}:${s}` : '⚠️ Code expired — generate a new one';
+    if (remaining === 0) clearInterval(expiryInterval);
+  }
+  tick();
+  expiryInterval = setInterval(tick, 1000);
+}
+
+async function connectWithCode() {
+  const codeInput = document.getElementById('ct-code-input');
+  const nameInput = document.getElementById('ct-name-input');
+  const btn = document.getElementById('ct-connect-btn');
+  const errorEl = document.getElementById('ct-error');
+  const enteredCode = codeInput.value.trim().toUpperCase();
+  const caretakerName = nameInput.value.trim() || 'Caretaker';
+
+  if (enteredCode.length !== 5) { showConnectError('Please enter a 5-character code.'); return; }
+  btn.textContent = 'Connecting…'; btn.disabled = true;
+  if (errorEl) errorEl.style.display = 'none';
+
+  try {
+    const result = await window.storage.get('code:' + enteredCode, true);
+    if (!result) { showConnectError('Code not found. Ask the elder to generate a fresh code.'); btn.textContent = 'Connect & Continue →'; btn.disabled = false; return; }
+    const data = JSON.parse(result.value);
+    if (Date.now() > data.expiresAt) { showConnectError('This code has expired. Ask the elder to generate a new one.'); btn.textContent = 'Connect & Continue →'; btn.disabled = false; return; }
+    connectedElderName = data.elderName;
+    connectedCaretakerName = caretakerName;
+    connectedElderCode = enteredCode;
+    await window.storage.set('connection:' + enteredCode, JSON.stringify({ elderName: data.elderName, caretakerName, connectedAt: Date.now() }), true);
+    onConnectionSuccess(enteredCode, data.elderName, caretakerName);
+  } catch(e) {
+    if (currentElderCode && enteredCode === currentElderCode) {
+      connectedElderName = 'Elder'; connectedCaretakerName = caretakerName; connectedElderCode = enteredCode;
+      onConnectionSuccess(enteredCode, 'Elder', caretakerName);
+    } else { showConnectError('Could not verify code. Try again.'); btn.textContent = 'Connect & Continue →'; btn.disabled = false; }
+  }
+}
+
+function showConnectError(msg) {
+  const el = document.getElementById('ct-error');
+  if (el) { el.textContent = '⚠️ ' + msg; el.style.display = 'block'; }
+}
+
+function onConnectionSuccess(code, elderName, caretakerName) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('care-elder-name', elderName);
+  set('care-linked-code', code);
+  set('care-home-name', caretakerName);
+  set('elder-sos-caretaker', caretakerName);
+  set('elder-call-caretaker', caretakerName);
+  set('elder-caretaker-msg', `${caretakerName} has been notified of your check-in.`);
+
+  const btn = document.getElementById('ct-connect-btn');
+  btn.textContent = '✅ Connected!';
+  btn.style.background = 'linear-gradient(135deg, var(--sage), #4A8060)';
+  setTimeout(() => { btn.textContent = 'Connect & Continue →'; btn.style.background = ''; btn.disabled = false; goTo('s-care-home'); }, 900);
+
+  const badge = document.getElementById('elder-connection-badge');
+  if (badge) { badge.textContent = `✅ Connected to ${caretakerName}`; badge.style.display = 'flex'; }
+}
+
+let pollInterval = null;
+function startPolling(code) {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(() => pollForConnection(code), 3000);
+}
+
+async function pollForConnection(code) {
+  try {
+    const result = await window.storage.get('connection:' + code, true);
+    if (result) {
+      const data = JSON.parse(result.value);
+      const badge = document.getElementById('elder-connection-badge');
+      if (badge) { badge.textContent = `✅ ${data.caretakerName} connected!`; badge.style.background = 'rgba(123,166,138,0.25)'; badge.style.color = '#2D7A50'; badge.style.display = 'flex'; }
+    }
+  } catch(e) {}
+}
+
+async function initElderCodeScreen() {
+  if (!currentElderCode) { await generateNewCode(); }
+  else {
+    const display = document.getElementById('elder-code-display');
+    if (display) display.textContent = currentElderCode;
+    startCodeExpiry(currentElderCode);
+    startPolling(currentElderCode);
+  }
+}
+
+function onElderNameChange() {}
+
+// ══════════════════════════════════════════════
+//  DATE / TIME
+// ══════════════════════════════════════════════
+function updateDateTime() {
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const hours = now.getHours();
+  const mins = String(now.getMinutes()).padStart(2,'0');
+  const timeStr = `${hours % 12 || 12}:${mins} ${hours >= 12 ? 'PM' : 'AM'}`;
+  const dateStr = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  const greeting = hours < 12 ? 'Good morning,' : hours < 17 ? 'Good afternoon,' : 'Good evening,';
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('care-date-display', dateStr);
+  set('care-date-line', greeting);
+  set('elder-date-display', dateStr);
+  set('elder-time-display', timeStr);
+  set('elder-greeting-text', greeting);
+  set('summary-date-a', `Today — ${months[now.getMonth()]} ${now.getDate()}`);
+  set('summary-date-b', `Yesterday — ${months[yesterday.getMonth()]} ${yesterday.getDate()}`);
+}
+updateDateTime();
+setInterval(updateDateTime, 30000);
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const screen = document.getElementById(screenId);
+  screen.classList.add('active');
+  screen.querySelectorAll('.anim').forEach(el => { el.style.animation = 'none'; el.offsetHeight; el.style.animation = ''; });
+  updateDateTime();
+  if (screenId === 's-elder-code') initElderCodeScreen();
+  if (screenId === 's-elder-home') refreshElderScheduleCard();
+  if (screenId === 's-ai-call') initAiCall().catch(console.error);
+}
+
+function switchCareTab(tab) {
+  ['ai','calls','summary'].forEach(t => {
+    document.getElementById('tab-' + t).classList.remove('active');
+    document.getElementById('care-tab-' + t).classList.remove('active');
+  });
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('care-tab-' + tab).classList.add('active');
+}
+
+function switchElderTab(tab) {
+  ['home','calls','help'].forEach(t => {
+    const panel = document.getElementById('elder-tab-' + t);
+    const btn = document.getElementById('et-' + t);
+    if (panel) panel.classList.remove('active');
+    if (btn) { btn.classList.remove('active'); btn.querySelector('.et-lbl').style.color = 'var(--text-light)'; }
+  });
+  const activePanel = document.getElementById('elder-tab-' + tab);
+  const activeBtn = document.getElementById('et-' + tab);
+  if (activePanel) activePanel.classList.add('active');
+  if (activeBtn) { activeBtn.classList.add('active'); activeBtn.querySelector('.et-lbl').style.color = 'var(--sage)'; }
+}
+
+// ══════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════
+function setCount(btn, n) {
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.editable-time').forEach((p, i) => { p.style.display = i < n ? '' : 'none'; });
+}
+
+let currentTimePill = null;
+function openTimePicker(pill, index) {
+  currentTimePill = pill;
+  const text = pill.textContent.replace(' ✎','').trim();
+  const match = text.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (match) { document.getElementById('tp-hour').value = match[1]; document.getElementById('tp-min').value = match[2]; document.getElementById('tp-ampm').value = match[3].toUpperCase(); }
+  document.getElementById('time-picker-modal').style.display = 'block';
+  const card = pill.closest('.card');
+  if (card) card.style.position = 'relative';
+}
+function cancelTimePicker() { document.getElementById('time-picker-modal').style.display = 'none'; currentTimePill = null; }
+function confirmTimePicker() {
+  const h = document.getElementById('tp-hour').value;
+  const m = document.getElementById('tp-min').value;
+  const ap = document.getElementById('tp-ampm').value;
+  if (currentTimePill) currentTimePill.textContent = `${h}:${m} ${ap} ✎`;
+  document.getElementById('time-picker-modal').style.display = 'none';
+  currentTimePill = null;
+}
+
+function toggleDay(el) { el.classList.toggle('active'); }
+function toggleSwitch(el) { el.classList.toggle('off'); }
+
+function showYesterday() { document.getElementById('summary-state-a').style.display = 'none'; document.getElementById('summary-state-b').style.display = 'block'; }
+function showToday() { document.getElementById('summary-state-b').style.display = 'none'; document.getElementById('summary-state-a').style.display = 'block'; }
+
+function simulateCall(btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '📲 Calling…'; btn.style.background = 'var(--sage)'; btn.disabled = true;
+  setTimeout(() => { btn.innerHTML = '✅ Call Connected'; setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.disabled = false; }, 2000); }, 1500);
+}
+
+function triggerSOS() {
+  const btn = event.currentTarget; const orig = btn.innerHTML;
+  btn.innerHTML = '<span style="font-size:52px;">✅</span> Alert Sent!';
+  btn.style.background = 'linear-gradient(135deg, var(--sage), #4A8060)';
+  setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2500);
+}
+
+function showSaved() {
+  const btn = event.currentTarget; const orig = btn.textContent;
+  btn.textContent = '✅ Saved!'; btn.style.background = 'linear-gradient(135deg, var(--sage), #4A8060)';
+  setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1800);
+}
+
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (e.key === '1') goTo('s-welcome');
+  if (e.key === '2') goTo('s-elder-code');
+  if (e.key === '3') goTo('s-care-connect');
+  if (e.key === '4') goTo('s-care-home');
+  if (e.key === '5') goTo('s-elder-home');
+});
+</script>
+
+<!-- Demo nav strip -->
+<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;background:rgba(0,0,0,0.7);padding:10px 16px;border-radius:99px;backdrop-filter:blur(8px);">
+  <button onclick="goTo('s-welcome')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Welcome</button>
+  <button onclick="goTo('s-elder-code')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Elder Code</button>
+  <button onclick="goTo('s-care-connect')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Caretaker Code</button>
+  <button onclick="goTo('s-care-home')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Care Home</button>
+  <button onclick="goTo('s-elder-home')" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:99px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Elder Home</button>
+</div>
+</body>
+</html>

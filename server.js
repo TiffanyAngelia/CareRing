@@ -1,12 +1,14 @@
 // CareRing backend — Express + Twilio + Gemini
 // Inbound call flow: elder calls the Twilio number → Gemini answers
+// Outbound call flow: app hits POST /call-elder → Twilio dials elder → Gemini answers
 // Usage: node src/server.js
 // Requires: npm install express twilio @google/generative-ai dotenv
 
-require('dotenv').config();
-const express = require('express');
-const twilio  = require('twilio');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+import twilio from 'twilio';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const app = express();
 app.use(express.json());
@@ -22,17 +24,95 @@ app.use((req, res, next) => {
 });
 
 // ── CONFIG ──
-const BASE_URL   = process.env.BASE_URL;
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const PORT       = process.env.PORT || 3000;
-
-const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+const BASE_URL        = process.env.BASE_URL;
+const GEMINI_KEY      = process.env.GEMINI_API_KEY;
+const TWILIO_FROM_NUM = '+441923311452';
+const PORT            = process.env.PORT || 3000;
+const twilioClient = twilio('ACa1e08eaaee5c2aed6266c4a899f8c898', 'deda1f05d19d8e354c2c237f1c2d1a93');
+const genAI        = new GoogleGenerativeAI(GEMINI_KEY);
 
 // ── IN-MEMORY SESSION STORE ──
 const sessions = new Map();
 
 // ══════════════════════════════════════════════
-//  POST /voice  — Twilio webhook when elder's call connects
+//  POST /call-elder  — app calls this to trigger an outbound call
+//  Body: { phoneNumber: "+15550001234", elderName: "Margaret" }
+// ══════════════════════════════════════════════
+app.post('/call-elder', async (req, res) => {
+  const { phoneNumber, elderName } = req.body;
+
+  if (!phoneNumber) {
+    return res.status(400).json({ ok: false, error: 'phoneNumber is required' });
+  }
+
+console.log(`[call-elder] dialling ${phoneNumber} for ${elderName || 'elder'}`);
+console.log(`[call-elder] from: ${TWILIO_FROM_NUM}`);
+console.log(`[call-elder] SID: ACa1e08eaaee5c2aed6266c4a899f8c898`);
+
+  try {
+    const call = await twilioClient.calls.create({
+      to:   phoneNumber,
+      from: TWILIO_FROM_NUM,
+      // When elder picks up, Twilio hits /voice-outbound which seeds the session
+      // with their name before handing off to the normal AI flow
+      url:  `${BASE_URL}/voice-outbound?elderName=${encodeURIComponent(elderName || 'there')}`,
+      method: 'POST',
+      statusCallback: `${BASE_URL}/call-status`,
+      statusCallbackMethod: 'POST',
+    });
+
+    console.log(`[call-elder] call created: ${call.sid}`);
+    res.json({ ok: true, callSid: call.sid });
+
+  } catch (err) {
+    console.error('[call-elder] Twilio error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════
+//  POST /voice-outbound  — webhook when outbound call is answered
+//  Same as /voice but elderName comes from query param
+// ══════════════════════════════════════════════
+app.post('/voice-outbound', async (req, res) => {
+  const callSid   = req.body.CallSid;
+  const elderName = req.query.elderName || 'there';
+
+  console.log(`[voice-outbound] ${callSid} answered — elder: ${elderName}`);
+
+  sessions.set(callSid, {
+    history:   [],
+    topics:    ['medication', 'day', 'activity', 'help', 'sleep'],
+    elderName,
+    createdAt: new Date().toISOString(),
+  });
+
+  const greeting = await getAiResponse(callSid, null);
+
+  const twiml  = new twilio.twiml.VoiceResponse();
+  const gather = twiml.gather({
+    input: 'speech', action: `${BASE_URL}/respond`,
+    method: 'POST', speechTimeout: 'auto', language: 'en-US',
+  });
+  gather.say({ voice: 'Polly.Joanna-Neural' }, greeting);
+
+  twiml.say({ voice: 'Polly.Joanna-Neural' }, "I didn't catch that — take your time and speak when you're ready.");
+  twiml.redirect({ method: 'POST' }, `${BASE_URL}/voice-outbound?elderName=${encodeURIComponent(elderName)}`);
+
+  res.type('text/xml').send(twiml.toString());
+});
+
+// ══════════════════════════════════════════════
+//  POST /call-status  — optional: Twilio calls this with call lifecycle events
+// ══════════════════════════════════════════════
+app.post('/call-status', (req, res) => {
+  const { CallSid, CallStatus } = req.body;
+  console.log(`[call-status] ${CallSid} → ${CallStatus}`);
+  res.sendStatus(200);
+});
+
+// ══════════════════════════════════════════════
+//  POST /voice  — Twilio webhook when elder's INBOUND call connects
 //  Set this as "A call comes in" in your Twilio phone number config
 // ══════════════════════════════════════════════
 app.post('/voice', async (req, res) => {
@@ -137,20 +217,26 @@ async function getAiResponse(callSid, userMessage) {
     .map((id, i) => `${i + 1}. ${TOPIC_PROMPTS[id] || id}`)
     .join('\n');
 
+  // Use elder's actual name if we have it
+  const nameGreeting = session.elderName && session.elderName !== 'there'
+    ? session.elderName
+    : 'there';
+
   const systemInstruction =
-`You are CareRing, a warm and caring AI assistant on a check-in phone call with an elderly person.
+`You are CareRing, a warm and caring AI assistant on a check-in phone call with an elderly person named ${nameGreeting}.
 
 Your job is to cover these topics one at a time, in a natural conversational way:
 ${topicList}
 
 Rules:
 - Be warm, patient, and speak plainly — short simple sentences.
+- Address them by name (${nameGreeting}) occasionally to keep it personal.
 - Ask ONE topic at a time. After they answer, move to the next.
 - When all topics are covered, thank them warmly and say goodbye.
 - Keep every response SHORT — 1 to 3 sentences. This is a phone call.
 - Never give medical advice. If something sounds urgent, tell them their caretaker will be notified.
 - Do NOT say "As an AI" or anything robotic. Sound like a kind, caring human.
-- On the very first turn, greet them warmly and jump straight into the first topic.`;
+- On the very first turn, greet them warmly by name and jump straight into the first topic.`;
 
   try {
     const model      = genAI.getGenerativeModel({ model: 'gemini-2.0-flash', systemInstruction });
@@ -184,5 +270,6 @@ app.listen(PORT, () => {
   console.log(`\n🚀 CareRing server running on port ${PORT}`);
   console.log(`   BASE_URL : ${BASE_URL}`);
   console.log(`   Health   : ${BASE_URL}/health`);
-  console.log(`\n   👉 Twilio webhook → ${BASE_URL}/voice  (HTTP POST)\n`);
+  console.log(`\n   👉 Twilio inbound webhook → ${BASE_URL}/voice  (HTTP POST)`);
+  console.log(`   👉 Outbound call trigger  → POST ${BASE_URL}/call-elder\n`);
 });
